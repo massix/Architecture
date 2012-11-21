@@ -1,0 +1,6 @@
+build/
+test/test
+*.swp
+*.o
+*.pb.*
+*.dylib
