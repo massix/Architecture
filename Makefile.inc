@@ -13,4 +13,4 @@ BOOST_LDFLAGS = -L/usr/local/lib -lboost_system-mt -lboost_program_options-mt
 
 INSTALL_DIR = $(shell pwd)/../build
 
-# vim: set filetype=make;
+# vi: ft=make
