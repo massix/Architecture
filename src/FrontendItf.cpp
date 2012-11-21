@@ -19,7 +19,8 @@ FrontendItf::FrontendItf(const std::string& iId) :
     _frontendId(iId),
     _confXml(_frontendId + "FE.xml"),
     _zmqContext(1),
-    _zmqSocket(_zmqContext, ZMQ_REP)
+    _zmqSocket(_zmqContext, ZMQ_REP),
+    _port(0)
 {
     std::cout << "Initializing FE " << _frontendId << std::endl;
 }

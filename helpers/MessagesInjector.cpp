@@ -86,8 +86,10 @@ int main(int argc, char *argv[])
     zmq::message_t aReply;
     aZMQSocket.recv(&aReply);
     
+    std::string aResponseReceived((const char*) aReply.data());
+
     // This part will be completed once the Receptor will send back Protobuf messages
-    std::cout << "Received reply: " << std::endl;
+    std::cout << "Received reply: " << aResponseReceived << std::endl;
     
     return 0;
 }
