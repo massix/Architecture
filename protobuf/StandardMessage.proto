@@ -18,38 +18,15 @@ message ResponseMessage {
     optional string    errorExplanation = 3;
 }
 
-
-// Sample login message
-message LoginMessage {
-    required BaseMessage  baseMessage = 1;
-    repeated string       allowedCyphers = 2;
-}
-
-// Context of the match
-message MatchContext {
-    required int32        matchId = 1;
-}
-
-// Sample "move" message
-message MoveMessage {
-    required BaseMessage  baseMessage = 1;
-
-    enum MoveType {
-       END_TURN = 0;
-    }
-    
-    required MoveType      requestedMove = 2;
-    required MatchContext  matchContext = 3;
-}
-
 message BackendRegistration {
-    required string host = 1;
-    required int32  port = 2;
+	required string host = 1;
+	required int32  port = 2;
 }
 
 message BackendRegistrationStatus {
-    required string status = 1;
+	required bool status = 1;
 }
+
 
 service FrontendHandling {
     rpc RegisterBackend (BackendRegistration) returns (BackendRegistrationStatus);
