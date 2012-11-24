@@ -9,10 +9,11 @@
 #include "MessageQueue.h"
 #include <protobuf/message.h>
 #include <zmq.hpp>
+#include <string>
 
 using zmq::message_t;
 
-MessageQueue::MessageQueue()
+MessageQueue::MessageQueue(const std::string& iMessageType)
 {
     _messagesList.clear();
 }
