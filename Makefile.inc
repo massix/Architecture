@@ -1,9 +1,17 @@
 # Common stuff
 
+SYSTEM = $(shell uname)
+
 CXX = clang++
 CXXFLAGS = -g -Wall -I. -I/usr/local/include -DDEBUG=1
 
+ifeq ($(SYSTEM), Darwin)
 LIB_EXT = .dylib
+endif
+
+ifeq ($(SYSTEM), Linux)
+LIB_EXT = .so
+endif
 
 PBUF_LDFLAGS = -L/usr/local/lib -lprotobuf
 ZMQ_LDFLAGS = -L/usr/local/lib -lzmq -lz
