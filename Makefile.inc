@@ -11,6 +11,7 @@ endif
 
 ifeq ($(SYSTEM), Linux)
 LIB_EXT = .so
+CXXFLAGS += -fPIC -I/usr/include/google
 endif
 
 PBUF_LDFLAGS = -L/usr/local/lib -lprotobuf
