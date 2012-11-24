@@ -7,6 +7,7 @@ all:
 
 clean:
 	@for DIR in ${SUBDIRS}; do $(MAKE) clean -C $$DIR; done
+	rm -fr build
 
 install:
 	@for DIR in ${SUBDIRS}; do $(MAKE) install -C $$DIR; done
