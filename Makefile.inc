@@ -1,7 +1,7 @@
 # Common stuff
 
 CXX = clang++
-CXXFLAGS = -Wall -I. -I/usr/local/include -DDEBUG=1
+CXXFLAGS = -g -Wall -I. -I/usr/local/include -DDEBUG=1
 
 LIB_EXT = .dylib
 

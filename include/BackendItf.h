@@ -6,14 +6,21 @@
  */
 
 #pragma once
+#include <zmq.hpp>
+#include <string>
 
 
 class BackendItf
 {
 public:
-	BackendItf();
+	explicit BackendItf();
 	virtual ~BackendItf();
+	void registerToFrontend(const std::string& iFrontend);
+
+	const bool isRegistered() const;
 
 private:
-protected:
+	bool _status;
+	zmq::context_t  _context;
+	zmq::socket_t	_socket;
 };

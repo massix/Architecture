@@ -1,5 +1,5 @@
 //
-//  MessageQueue.h
+	//  MessageQueue.h
 //  Architecture
 //
 //  Created by Massimo Gengarelli on 17/11/12.
@@ -13,7 +13,6 @@
 #include <list>
 #include <exception>
 #include <string>
-#include <protobuf/message.h>
 #include <zmq.hpp>
 
 class MessageQueueException : public std::exception
@@ -31,7 +30,7 @@ private:
 class MessageQueue
 {
 public:
-    explicit MessageQueue();
+    explicit MessageQueue(const std::string& iMessageType);
     virtual ~MessageQueue();
     
     void enqueueMessage(const std::string& iMessage);

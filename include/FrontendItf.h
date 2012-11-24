@@ -13,6 +13,9 @@
 #include <zmq.hpp>
 #include "MessageQueue.h"
 #include <StandardMessage.pb.h>
+#include <map>
+#include <vector>
+#include <BackendItf.h>
 
 class FrontendItf
 {
@@ -20,7 +23,6 @@ public:
     explicit FrontendItf(const std::string& iId);
     virtual ~FrontendItf();
     
-    const MessageQueue& getMsgQ() const;
     const std::string& getId() const;
     /* Return copy to avoid modifications */
     const std::string getConfXml() const;
@@ -45,13 +47,14 @@ private:
     FrontendItf& operator=(const FrontendItf& iRight);
     
 protected:
-    MessageQueue _msgQ;
     std::string _frontendId;
     std::string _confXml;
     zmq::context_t _zmqContext;
     zmq::socket_t _zmqSocket;
+    zmq::socket_t _beSocket;
     
     std::string _hostname;
     uint16_t    _port;
+    uint16_t    _bePort;
 };
 

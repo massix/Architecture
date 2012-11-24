@@ -14,25 +14,23 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <Log.h>
 
 FrontendItf::FrontendItf(const std::string& iId) :
     _frontendId(iId),
     _confXml(_frontendId + "FE.xml"),
     _zmqContext(1),
     _zmqSocket(_zmqContext, ZMQ_REP),
-    _port(0)
+    _beSocket(_zmqContext, ZMQ_ROUTER),
+    _port(0),
+    _bePort(0)
 {
-    std::cout << "Initializing FE " << _frontendId << std::endl;
+	LOG_MSG("Initializing FE " + _frontendId);
 }
 
 FrontendItf::~FrontendItf()
 {
     _zmqSocket.close();
-}
-
-const MessageQueue& FrontendItf::getMsgQ() const
-{
-    return _msgQ;
 }
 
 const std::string& FrontendItf::getId() const
@@ -54,14 +52,13 @@ void FrontendItf::configure()
             if (aPtreeIterator->first == "Frontend") {
                 _hostname = aPtreeIterator->second.get<std::string>("<xmlattr>.host");
                 _port = aPtreeIterator->second.get<uint16_t>("<xmlattr>.port");
+                _bePort = aPtreeIterator->second.get<uint16_t>("<xmlattr>.recv");
             }
         }
     }
     catch (...) {
         
     }
-    
-    std::cout << *this << std::endl;
 }
 
 FrontendItf& FrontendItf::reconfigure(const std::string iNewXml)
@@ -70,8 +67,6 @@ FrontendItf& FrontendItf::reconfigure(const std::string iNewXml)
     _port = 0;
     _confXml = iNewXml;
     configure();
-    
-    _msgQ.clear();
     return *this;
 }
 
@@ -82,17 +77,20 @@ const std::string FrontendItf::getConfXml() const
 
 void FrontendItf::start()
 {
-    std::string aZMQString("tcp://" + _hostname + ":");
-    aZMQString += boost::lexical_cast<std::string>(_port);
-    std::cout << *this << " bound to: " << aZMQString << std::endl;
+    std::string aZMQString("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_port));
+    std::string aBEPort("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_bePort));
+
+    LOG_MSG("Bound to: " + aZMQString);
+    LOG_MSG("Receiving BEs: " + aBEPort);
+
     _zmqSocket.bind(aZMQString.c_str());
+    _beSocket.bind(aBEPort.c_str());
     
     while (true) {
         zmq::message_t aZMQMessage;
         _zmqSocket.recv(&aZMQMessage);
         std::string aStringMessage((const char*) aZMQMessage.data(), aZMQMessage.size());
         if ("QUIT" == aStringMessage) break;
-        _msgQ.enqueueMessage(aStringMessage);
         
         std::cout << "Frontend enqueued message" << std::endl;
         
