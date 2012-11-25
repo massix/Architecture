@@ -14,7 +14,12 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
+
 #include <Log.h>
+
+using namespace boost::interprocess;
 
 FrontendItf::FrontendItf(const std::string& iId) :
     _frontendId(iId),
@@ -24,12 +29,18 @@ FrontendItf::FrontendItf(const std::string& iId) :
     _beSocket(_zmqContext, ZMQ_ROUTER),
     _port(0),
     _bePort(0)
-{
-	LOG_MSG("Initializing FE " + _frontendId);
+{    
+    shared_memory_object::remove(_frontendId.c_str());
+    managed_shared_memory aMngShm(create_only, _frontendId.c_str(), 65000);
+
+    ShmemAllocator anAllocator(aMngShm.get_segment_manager());
+    _map = aMngShm.construct<BackendMap>("BackendMap")(std::less<std::string>(), anAllocator);
 }
 
 FrontendItf::~FrontendItf()
 {
+//    _mem.deallocate()
+    shared_memory_object::remove(_frontendId.c_str());
     _zmqSocket.close();
 }
 

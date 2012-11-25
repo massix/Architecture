@@ -16,9 +16,13 @@
 #include <map>
 #include <vector>
 #include <BackendItf.h>
+#include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 
-typedef std::map<std::string, zmq::socket_t*> BackendMap;
+typedef std::pair<std::string, zmq::socket_t*> value_t;
+typedef boost::interprocess::allocator<value_t,
+    boost::interprocess::managed_shared_memory::segment_manager> ShmemAllocator;
+typedef std::map<std::string, zmq::socket_t*, std::less<std::string>, ShmemAllocator> BackendMap;
 
 class FrontendItf
 {
@@ -59,5 +63,6 @@ protected:
     std::string _hostname;
     uint16_t    _port;
     uint16_t    _bePort;
+    BackendMap*	_map;
 };
 
