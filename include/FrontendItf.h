@@ -16,6 +16,9 @@
 #include <map>
 #include <vector>
 #include <BackendItf.h>
+#include <boost/interprocess/managed_shared_memory.hpp>
+
+typedef std::map<std::string, zmq::socket_t*> BackendMap;
 
 class FrontendItf
 {
