@@ -7,22 +7,23 @@
 //
 
 #pragma once
+#include "MessageQueue.h"
 
 #include <iostream>
 #include <string>
 #include <zmq.hpp>
-#include "MessageQueue.h"
 #include <StandardMessage.pb.h>
 #include <map>
 #include <vector>
+#include <functional>
+#include <utility>
 #include <BackendItf.h>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 
-typedef std::pair<std::string, zmq::socket_t*> value_t;
-typedef boost::interprocess::allocator<value_t,
-    boost::interprocess::managed_shared_memory::segment_manager> ShmemAllocator;
-typedef std::map<std::string, zmq::socket_t*, std::less<std::string>, ShmemAllocator> BackendMap;
+typedef std::pair<const std::string, MessageQueue> value_t;
+typedef boost::interprocess::allocator<value_t, boost::interprocess::managed_shared_memory::segment_manager> ShmemAllocator;
+typedef std::map<std::string, MessageQueue, std::less<std::string>, ShmemAllocator> BackendMap;
 
 class FrontendItf
 {

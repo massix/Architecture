@@ -15,7 +15,6 @@ class BackendItf
 public:
 	explicit BackendItf();
 	virtual ~BackendItf();
-	void registerToFrontend(const std::string& iFrontend);
 
 	const bool isRegistered() const;
 

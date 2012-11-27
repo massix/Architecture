@@ -30,7 +30,7 @@ private:
 class MessageQueue
 {
 public:
-    explicit MessageQueue(const std::string& iMessageType);
+    explicit MessageQueue();
     virtual ~MessageQueue();
     
     void enqueueMessage(const std::string& iMessage);

@@ -5,13 +5,16 @@
  *      Author: massi
  */
 
+#include "StandardMessage.pb.h"
 #include <BackendItf.h>
 #include <zmq.hpp>
 #include <string>
+#include <unistd.h>
 
 using std::string;
 using zmq::context_t;
 using zmq::socket_t;
+using zmq::message_t;
 
 BackendItf::BackendItf() :
 	_status(false), _context(0), _socket(_context, ZMQ_REQ)
@@ -22,17 +25,6 @@ BackendItf::BackendItf() :
 BackendItf::~BackendItf()
 {
 
-}
-
-void BackendItf::registerToFrontend(const string& iFrontend)
-{
-	if (!iFrontend.empty()) {
-		try {
-			_socket.connect(iFrontend.c_str());
-			_status = true;
-		}
-		catch (...) { _status = false; }
-	}
 }
 
 const bool BackendItf::isRegistered() const

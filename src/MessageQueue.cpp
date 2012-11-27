@@ -13,7 +13,7 @@
 
 using zmq::message_t;
 
-MessageQueue::MessageQueue(const std::string& iMessageType)
+MessageQueue::MessageQueue()
 {
     _messagesList.clear();
 }

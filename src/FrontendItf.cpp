@@ -7,9 +7,10 @@
 //
 
 #include "FrontendItf.h"
-#include <string>
 #include "MessageQueue.h"
+#include "StandardMessage.pb.h"
 
+#include <string>
 #include <zmq.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -28,7 +29,8 @@ FrontendItf::FrontendItf(const std::string& iId) :
     _zmqSocket(_zmqContext, ZMQ_REP),
     _beSocket(_zmqContext, ZMQ_ROUTER),
     _port(0),
-    _bePort(0)
+    _bePort(0),
+    _map(0)
 {    
     shared_memory_object::remove(_frontendId.c_str());
     managed_shared_memory aMngShm(create_only, _frontendId.c_str(), 65000);
@@ -103,8 +105,15 @@ void FrontendItf::start()
         std::string aStringMessage((const char*) aZMQMessage.data(), aZMQMessage.size());
         if ("QUIT" == aStringMessage) break;
         
-        std::cout << "Frontend enqueued message" << std::endl;
+        ReceptorMessages::BaseMessage aRecvMessage;
+        aRecvMessage.ParseFromString(aStringMessage);
         
+        const std::string aMsgType(aRecvMessage.messagetype());
+
+        /* TODO: find out why this isn't working */
+//        (*_map)[aMsgType].enqueueMessage(aStringMessage);
+        
+        std::cout << "Frontend enqueued message: " << aRecvMessage.messagetype() << std::endl;
         // Send a Reply to the Receptor
         std::string aReply("ENQ:1");
         zmq::message_t aResponse(aReply.size());
