@@ -36,6 +36,7 @@ public:
     void enqueueMessage(const std::string& iMessage);
     std::string dequeueMessage();
     bool hasMessages() const;
+    std::size_t size() const;
     
     void clear();
     

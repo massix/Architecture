@@ -12,11 +12,16 @@
 
 #include <string>
 #include <zmq.hpp>
+#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
 #include <Log.h>
+
+#define kMemBM   "BackendMap"
+#define kMemST   "SonStatus"
+#define bforeach BOOST_FOREACH
 
 using namespace boost::interprocess;
 
@@ -35,8 +40,8 @@ FrontendItf::FrontendItf(const std::string& iId) :
     managed_shared_memory aSegment(create_only, _frontendId.c_str(), 65536);
     ShmemAllocator aMemAllocator(aSegment.get_segment_manager());
     
-    aSegment.construct<BackendMap>("BackendMap")(std::less<std::string>(), aMemAllocator);
-    aSegment.construct<bool>("SonStatus")(false);
+    aSegment.construct<BackendMap>(kMemBM)(std::less<std::string>(), aMemAllocator);
+    aSegment.construct<bool>(kMemST)(false);
 }
 
 FrontendItf::~FrontendItf()
@@ -92,23 +97,21 @@ void FrontendItf::startBackendListener()
     
     switch (fork())
     {
-        // Son
+        // Child process
         case 0:
         {
             managed_shared_memory aSegment(open_only, _frontendId.c_str());
-            std::pair<BackendMap*, managed_shared_memory::size_type> aMapResources;
-            std::pair<bool*, managed_shared_memory::size_type> aBooleanResources;
-            
-            aMapResources = aSegment.find<BackendMap>("BackendMap");
-            _map = aMapResources.first;
-            
-            aBooleanResources = aSegment.find<bool>("SonStatus");
-            _sonStatus = aBooleanResources.first;
+            _map = aSegment.find<BackendMap>(kMemBM).first;
+            _sonStatus = aSegment.find<bool>(kMemST).first;
             
             while (*_sonStatus)
             {
-                sleep(2);
-                std::cout << " SON: " << _map->size() << std::endl;
+                sleep(3);
+                std::cout << " Map Size: " << _map->size() << std::endl;
+                bforeach(const BackendMap::value_type& aPair, (*_map))
+                {
+                    std::cout << " Iterating ... " << aPair.first << std::endl;
+                }
             }
         }
             break;
@@ -124,8 +127,8 @@ void FrontendItf::start()
     LOG_MSG("Receiving BEs: " + aBEPort);
     
     managed_shared_memory aSegmentForOpen(open_only, _frontendId.c_str());
-    _map = aSegmentForOpen.find<BackendMap>("BackendMap").first;
-    _sonStatus = aSegmentForOpen.find<bool>("SonStatus").first;
+    _map = aSegmentForOpen.find<BackendMap>(kMemBM).first;
+    _sonStatus = aSegmentForOpen.find<bool>(kMemST).first;
     
     std::cout << "_map: " << _map << std::endl;
     
@@ -140,15 +143,21 @@ void FrontendItf::start()
         zmq::message_t aZMQMessage;
         _zmqSocket.recv(&aZMQMessage);
         std::string aStringMessage((const char*) aZMQMessage.data(), aZMQMessage.size());
-        if ("QUIT" == aStringMessage) { *_sonStatus = false;  break; }
+        if ("QUIT" == aStringMessage) {
+            *_sonStatus = false;
+            break;
+        }
         
         ReceptorMessages::BaseMessage aRecvMessage;
         aRecvMessage.ParseFromString(aStringMessage);
         
         const std::string aMsgType(aRecvMessage.messagetype());
 
+        std::cout << "Storing message: " << aMsgType << std::endl;
+
         /* TODO: find out why this isn't working */
-        (*_map)[aMsgType].enqueueMessage(aStringMessage);
+        MessageQueue& aMsgQ = (*_map)[aMsgType];
+        aMsgQ.enqueueMessage(aStringMessage);
      
         std::cout << "Frontend enqueued message: " << aRecvMessage.messagetype() << std::endl;
         // Send a Reply to the Receptor

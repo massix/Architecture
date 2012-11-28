@@ -48,3 +48,8 @@ void MessageQueue::clear()
 {
     _messagesList.clear();
 }
+
+std::size_t MessageQueue::size() const
+{
+    return _messagesList.size();
+}
