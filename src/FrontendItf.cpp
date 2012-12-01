@@ -12,6 +12,7 @@
 
 #include <string>
 #include <zmq.hpp>
+#include <boost/thread.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -21,9 +22,30 @@
 
 #define kMemBM   "BackendMap"
 #define kMemST   "SonStatus"
+
 #define bforeach BOOST_FOREACH
 
-using namespace boost::interprocess;
+class Callable
+{
+public:
+    Callable (boost::shared_ptr<BackendMap>& iMap, boost::shared_ptr<bool>& iStatus) :
+        _map(iMap), _status(iStatus) {};
+    virtual ~Callable() {};
+    void operator()() {
+        while (*_status) {
+            sleep(3);
+            std::cout << " SON: Map size: " << _map->size() << std::endl;
+            bforeach(const BackendMap::value_type& aPair, (*_map))
+            {
+                std::cout << " SON: Key  " << aPair.first << std::endl;
+                std::cout << " SON: Size " << aPair.second.size() << std::endl;
+            }
+        }
+    }
+    
+    boost::shared_ptr<BackendMap>& _map;
+    boost::shared_ptr<bool>& _status;
+};
 
 FrontendItf::FrontendItf(const std::string& iId) :
     _frontendId(iId),
@@ -33,20 +55,13 @@ FrontendItf::FrontendItf(const std::string& iId) :
     _beSocket(_zmqContext, ZMQ_REP),
     _port(0),
     _bePort(0),
-    _map(0),
-    _sonStatus(0)
-{
-    shared_memory_object::remove(_frontendId.c_str());
-    managed_shared_memory aSegment(create_only, _frontendId.c_str(), 65536);
-    ShmemAllocator aMemAllocator(aSegment.get_segment_manager());
-    
-    aSegment.construct<BackendMap>(kMemBM)(std::less<std::string>(), aMemAllocator);
-    aSegment.construct<bool>(kMemST)(false);
+    _map(new BackendMap),
+    _sonStatus(new bool(false))
+{    
 }
 
 FrontendItf::~FrontendItf()
 {
-    shared_memory_object::remove(_frontendId.c_str());
     _zmqSocket.close();
 }
 
@@ -94,28 +109,8 @@ const std::string FrontendItf::getConfXml() const
 
 void FrontendItf::startBackendListener()
 {
-    
-    switch (fork())
-    {
-        // Child process
-        case 0:
-        {
-            managed_shared_memory aSegment(open_only, _frontendId.c_str());
-            _map = aSegment.find<BackendMap>(kMemBM).first;
-            _sonStatus = aSegment.find<bool>(kMemST).first;
-            
-            while (*_sonStatus)
-            {
-                sleep(3);
-                std::cout << " Map Size: " << _map->size() << std::endl;
-                bforeach(const BackendMap::value_type& aPair, (*_map))
-                {
-                    std::cout << " Iterating ... " << aPair.first << std::endl;
-                }
-            }
-        }
-            break;
-    }
+    Callable aCallable(_map, _sonStatus);
+    boost::thread aThread(aCallable);
 }
 
 void FrontendItf::start()
@@ -125,10 +120,6 @@ void FrontendItf::start()
     
     LOG_MSG("Bound to: " + aZMQString);
     LOG_MSG("Receiving BEs: " + aBEPort);
-    
-    managed_shared_memory aSegmentForOpen(open_only, _frontendId.c_str());
-    _map = aSegmentForOpen.find<BackendMap>(kMemBM).first;
-    _sonStatus = aSegmentForOpen.find<bool>(kMemST).first;
     
     std::cout << "_map: " << _map << std::endl;
     

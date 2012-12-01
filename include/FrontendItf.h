@@ -19,18 +19,8 @@
 #include <utility>
 #include <BackendItf.h>
 #include <boost/shared_ptr.hpp>
-#include <boost/interprocess/containers/map.hpp>
-#include <boost/interprocess/allocators/allocator.hpp>
-#include <boost/interprocess/managed_shared_memory.hpp>
 
-using namespace boost::interprocess;
-
-typedef std::string KeyType;
-typedef MessageQueue MappedType;
-typedef std::pair<const std::string, MessageQueue> ValueType;
-
-typedef allocator<ValueType, managed_shared_memory::segment_manager> ShmemAllocator;
-typedef map<KeyType, MappedType, std::less<KeyType>, ShmemAllocator> BackendMap;
+typedef std::map<std::string, MessageQueue> BackendMap;
 
 class FrontendItf
 {
@@ -72,8 +62,8 @@ protected:
     std::string _hostname;
     uint16_t    _port;
     uint16_t    _bePort;
-    BackendMap* _map;
-    bool* _sonStatus;
+    boost::shared_ptr<BackendMap> _map;
+    boost::shared_ptr<bool> _sonStatus;
         
 };
 
