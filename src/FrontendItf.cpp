@@ -191,22 +191,22 @@ void FrontendItf::start()
         
         const std::string aMsgType(aRecvMessage.messagetype());
 
-        std::cout << "Storing message: " << aMsgType << std::endl;
+        LOG_MSG("Storing message: " + aMsgType);
         MessageQueue& aMsgQ = (*_map)[aMsgType];
         aMsgQ.enqueueMessage(aStringMessage);
      
-        std::cout << "Frontend enqueued message: " << aRecvMessage.messagetype() << std::endl;
+        LOG_MSG("Frontend enqueued message: " + aRecvMessage.messagetype());
         // Send a Reply to the Receptor
         std::string aReply("ENQ:1");
         zmq::message_t aResponse(aReply.size());
         memcpy(aResponse.data(), aReply.c_str(), aReply.size());
         
-        std::cout << "Frontend sending reply" << std::endl;
+        LOG_MSG("Frontend sending reply");
         
         _zmqSocket.send(aResponse);
     }
     
-    std::cout << " Frontend " << _frontendId << " stopping." << std::endl;
+    LOG_MSG("Frontend " + _frontendId + " stopping");
 }
 
 void FrontendItf::stop()

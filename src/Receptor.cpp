@@ -16,6 +16,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
+#include <Log.h>
 
 #include "StandardMessage.pb.h"
 
@@ -66,9 +67,7 @@ void Receptor::startServer() throw(ReceptorException) {
             ReceptorMessages::BaseMessage aBaseMessage;
             aBaseMessage.ParseFromString((const char*) aMessage.data());
             
-            std::cout << "Received " << aBaseMessage.messagetype() << " ";
-            std::cout << "from UID: " << aBaseMessage.userid() << " with password: ";
-            std::cout << aBaseMessage.shapassword() << std::endl;
+            LOG_MSG("Received " + aBaseMessage.messagetype());
             routeMessage(&aBaseMessage);
             
             // Send a fake reply
@@ -97,8 +96,7 @@ void Receptor::routeMessage(ReceptorMessages::BaseMessage *ioBaseMessage) {
             zmq::message_t aQuitMessage(4);
             memcpy(aQuitMessage.data(), "QUIT", 4);
             anIte->second->send(aQuitMessage);
-            std::cout << " Terminated FE " << anIte->first << std::endl;
-            
+            LOG_MSG("Asking FE " + anIte->first + " to terminate");
             anIte->second->close();
         }
         
@@ -107,7 +105,7 @@ void Receptor::routeMessage(ReceptorMessages::BaseMessage *ioBaseMessage) {
     
     try {
         string& aDestination = _routingMap[ioBaseMessage->messagetype()];
-        std::cout << "   Routing to " << aDestination << std::endl;
+        LOG_MSG("Routing message to: " + aDestination);
         
         // Send message to the frontend
         std::string aSerializedMessage;
@@ -119,13 +117,11 @@ void Receptor::routeMessage(ReceptorMessages::BaseMessage *ioBaseMessage) {
         
         aSocket->send(aMessage);
         
-        std::cout << "   Router message sent" << std::endl;
-        
         zmq::message_t aResponse;
 
         // Receive the reply
         aSocket->recv(&aResponse);
-        std::cout << "   Router response received" << std::endl;
+        LOG_MSG("Router response received");
     }
     catch (const std::exception& e) {
         std::cerr << "Exception: " << e.what() << std::endl;

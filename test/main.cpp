@@ -13,6 +13,8 @@
 #include <zmq.hpp>
 #include <exception>
 #include <pthread.h>
+#include <stdint.h>
+#include <Log.h>
 
 #include "BackendItf.h"
 #include "FrontendItf.h"
@@ -44,7 +46,7 @@ void sendAndReceive(zmq::socket_t& ioSocket, zmq::message_t& ioMessage)
     ioSocket.recv(&ioMessage);
     
     std::string aResponse((const char*)ioMessage.data(), 3);
-    std::cout << "Client received back: " << aResponse << std::endl;
+    LOG_MSG("Client received back: " + aResponse);
     assert(aResponse == "ACK");
 }
 
@@ -114,16 +116,16 @@ void* backendThread(void *ioArgs)
         MyBackend(const std::string& iBackendName) : BackendItf(iBackendName) {};
         virtual ~MyBackend() {};
         virtual bool handleMessage(const std::string& iSerializedMessage) {
-            std::cout << "MyBackend received a message O_O" << std::endl;
+            LOG_MSG("MyBackend received a message");
             sleep(getPollTimeout());
             return true;
         }
         virtual bool handlePollTimeout() {
-            std::cout << "Handle PollTimeout called" << std::endl;
+            LOG_MSG("Handle PollTimeout called");
             return true;
         }
         virtual bool handleNoMessages() {
-            std::cout << "HandleNoMessage called" << std::endl;
+            LOG_MSG("HandleNoMessage called");
             sleep(getPollTimeout());
             return true;
         }
