@@ -14,6 +14,7 @@
 #include <exception>
 #include <pthread.h>
 #include <stdint.h>
+#include <signal.h>
 #include <Log.h>
 
 #include "BackendItf.h"
@@ -90,18 +91,21 @@ void* clientThread(void *ioArgs)
     
     ReceptorMessages::BaseMessage aBaseMessage;
     zmq::message_t aZMQRequest(0);
+        
+    ReceptorMessages::BaseMessage aGlobalBaseMessage;
+    aGlobalBaseMessage.set_messagetype("DATE");
+    aGlobalBaseMessage.set_userid(17);
+    aGlobalBaseMessage.set_shapassword("Password");
     
-    sendMessage(aBaseMessage, "LOGIN", aZMQSocket, aZMQRequest);
-    sleep(1);
+    ReceptorMessages::DateRequest aDateRequest;
+    aDateRequest.set_format("YYYY-MM-DD");
     
-    sendMessage(aBaseMessage, "MOVE", aZMQSocket, aZMQRequest);
-    sleep(1);
-    
-    sendMessage(aBaseMessage, "DATE", aZMQSocket, aZMQRequest);
+    std::string aSerializedDateRequest;
+    aDateRequest.SerializeToString(&aSerializedDateRequest);
+    aGlobalBaseMessage.set_options(aSerializedDateRequest);
+    encapsulateMessage(aZMQRequest, aGlobalBaseMessage);
+    sendAndReceive(aZMQSocket, aZMQRequest);
     sleep(5);
-    
-    sendMessage(aBaseMessage, "QUIT", aZMQSocket, aZMQRequest);
-    sleep(1);
     
     aZMQSocket.close();
     
@@ -117,7 +121,10 @@ void* backendThread(void *ioArgs)
         virtual ~MyBackend() {};
         virtual bool handleMessage(const std::string& iSerializedMessage) {
             LOG_MSG("MyBackend received a message");
-            sleep(getPollTimeout());
+            ReceptorMessages::DateRequest aDateRequestMsg;
+            aDateRequestMsg.ParseFromString(iSerializedMessage);
+            
+            LOG_MSG("Requested format: " + aDateRequestMsg.format());
             return true;
         }
         virtual bool handlePollTimeout() {
@@ -161,12 +168,24 @@ int main(int argc, char *argv[])
     
     // Start the client
     pthread_create(&aClientThread, 0, &clientThread, 0);
-    
+
+    // Wait for the client to finish
     pthread_join(aClientThread, 0);
-    pthread_join(aReceptorThread, 0);
-    pthread_join(aDateUsersFrontendThread, 0);
-    pthread_join(aMoveFrontendThread, 0);
+    
+    // Kill the other processes
+    pthread_kill(aLoginFrontendThread, SIGINT);
     pthread_join(aLoginFrontendThread, 0);
+    
+    pthread_kill(aReceptorThread, SIGINT);
+    pthread_join(aReceptorThread, 0);
+    
+    pthread_kill(aDateUsersFrontendThread, SIGINT);
+    pthread_join(aDateUsersFrontendThread, 0);
+    
+    pthread_kill(aMoveFrontendThread, SIGINT);
+    pthread_join(aMoveFrontendThread, 0);
+
+    pthread_kill(aDateBackendThread, SIGINT);
     pthread_join(aDateBackendThread, 0);
     
     return 0;

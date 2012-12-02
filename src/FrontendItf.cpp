@@ -193,7 +193,7 @@ void FrontendItf::start()
 
         LOG_MSG("Storing message: " + aMsgType);
         MessageQueue& aMsgQ = (*_map)[aMsgType];
-        aMsgQ.enqueueMessage(aStringMessage);
+        aMsgQ.enqueueMessage(aRecvMessage.options());
      
         LOG_MSG("Frontend enqueued message: " + aRecvMessage.messagetype());
         // Send a Reply to the Receptor

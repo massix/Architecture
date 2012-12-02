@@ -8,23 +8,13 @@ message BaseMessage {
     required string   messageType = 1;
     required int32    userId = 2;
     required string   shaPassword = 3;
-    optional string   options = 4;
+    optional bytes   options = 4;
 }
 
 // The receptor *always* sends this message
 message ResponseMessage {
     required string    messageType = 1;
-    optional int32     errorCode = 2;
-    optional string    errorExplanation = 3;
-}
-
-message BackendRegistration {
-	required string host = 1;
-	required int32  port = 2;
-}
-
-message BackendRegistrationStatus {
-	required bool status = 1;
+    required string    serializedMessage = 2;
 }
 
 message BackendRequestMessage {
@@ -37,7 +27,10 @@ message BackendResponseMessage {
     required string serializedMessage = 2;
 }
 
-service FrontendHandling {
-    rpc RegisterBackend (BackendRegistration) returns (BackendRegistrationStatus);
-    rpc GetMessage (BaseMessage) returns (BaseMessage);
+message DateRequest {
+    required string format = 1;
+}
+
+message DateResponse {
+    required string date = 1;
 }

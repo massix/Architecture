@@ -10,6 +10,7 @@
 #include <protobuf/message.h>
 #include <zmq.hpp>
 #include <string>
+#include <Log.h>
 
 using zmq::message_t;
 
@@ -25,7 +26,7 @@ MessageQueue::~MessageQueue()
 
 void MessageQueue::enqueueMessage(const std::string& iMessage)
 {
-    std::cout << " MessageQueue: ENQUEUEING MESSAGE" << std::endl;
+    LOG_MSG("Enqueueing message");
     _messagesList.push_back(iMessage);
 }
 
