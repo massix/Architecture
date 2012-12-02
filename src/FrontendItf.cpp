@@ -12,6 +12,7 @@
 
 #include <string>
 #include <zmq.hpp>
+#include <zmq_utils.h>
 #include <boost/thread.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
@@ -20,20 +21,59 @@
 
 #include <Log.h>
 
-#define kMemBM   "BackendMap"
-#define kMemST   "SonStatus"
-
 #define bforeach BOOST_FOREACH
 
-class Callable
+struct Callable
 {
-public:
     Callable (boost::shared_ptr<BackendMap>& iMap, boost::shared_ptr<bool>& iStatus) :
         _map(iMap), _status(iStatus) {};
     virtual ~Callable() {};
     void operator()() {
+        zmq::context_t aContext(1);
+        zmq::socket_t aSocket(aContext, ZMQ_REP);
+        std::string aBEPort("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_port));
+        
+        aSocket.bind(aBEPort.c_str());
+        
         while (*_status) {
-            sleep(3);
+            zmq::pollitem_t aPollItems[] = {
+                {aSocket, 0, ZMQ_POLLIN, 0 }
+            };
+            
+            /* Expects address of first socket */
+            zmq::poll(&aPollItems[0], 1, 3 * (1000 * 1000));
+            
+            if (aPollItems[0].revents & ZMQ_POLLIN)
+            {
+                LOG_MSG("Processing Backend request");
+                zmq::message_t aMessage;
+                aSocket.recv(&aMessage);
+                
+                ReceptorMessages::BackendRequestMessage aRequestMessage;
+                aRequestMessage.ParseFromString(std::string((const char *) aMessage.data()));
+                
+                // Prepare for reply
+                ReceptorMessages::BackendResponseMessage aResponseMessage;
+                aResponseMessage.set_messagetype("EMPTY");
+                aResponseMessage.set_serializedmessage("EMPTY");
+                
+                if (_map->find(aRequestMessage.messagetype()) != _map->end())
+                {
+                    MessageQueue& aMsgQ = (*_map)[aRequestMessage.messagetype()];
+                    std::string anEncodedMsg = aMsgQ.dequeueMessage();
+                    
+                    aResponseMessage.set_messagetype(aRequestMessage.messagetype());
+                    aResponseMessage.set_serializedmessage(anEncodedMsg);
+                }
+                
+                std::string aSerializedResponse;
+                aResponseMessage.SerializeToString(&aSerializedResponse);
+                
+                zmq::message_t aZmqResponse(aSerializedResponse.size());
+                memcpy(aZmqResponse.data(), aSerializedResponse.c_str(), aSerializedResponse.size());
+                aSocket.send(aZmqResponse);
+            }
+
             std::cout << " SON: Map size: " << _map->size() << std::endl;
             bforeach(const BackendMap::value_type& aPair, (*_map))
             {
@@ -45,6 +85,8 @@ public:
     
     boost::shared_ptr<BackendMap>& _map;
     boost::shared_ptr<bool>& _status;
+    std::string _hostname;
+    uint16_t _port;
 };
 
 FrontendItf::FrontendItf(const std::string& iId) :
@@ -52,7 +94,6 @@ FrontendItf::FrontendItf(const std::string& iId) :
     _confXml(_frontendId + "FE.xml"),
     _zmqContext(1),
     _zmqSocket(_zmqContext, ZMQ_REP),
-    _beSocket(_zmqContext, ZMQ_REP),
     _port(0),
     _bePort(0),
     _map(new BackendMap),
@@ -110,16 +151,16 @@ const std::string FrontendItf::getConfXml() const
 void FrontendItf::startBackendListener()
 {
     Callable aCallable(_map, _sonStatus);
+    aCallable._hostname = _hostname;
+    aCallable._port = _bePort;
     boost::thread aThread(aCallable);
 }
 
 void FrontendItf::start()
 {
     std::string aZMQString("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_port));
-    std::string aBEPort("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_bePort));
     
     LOG_MSG("Bound to: " + aZMQString);
-    LOG_MSG("Receiving BEs: " + aBEPort);
     
     std::cout << "_map: " << _map << std::endl;
     
@@ -128,7 +169,6 @@ void FrontendItf::start()
     startBackendListener();
     
     _zmqSocket.bind(aZMQString.c_str());
-    _beSocket.bind(aBEPort.c_str());
     
     while (true) {
         zmq::message_t aZMQMessage;
@@ -145,8 +185,6 @@ void FrontendItf::start()
         const std::string aMsgType(aRecvMessage.messagetype());
 
         std::cout << "Storing message: " << aMsgType << std::endl;
-
-        /* TODO: find out why this isn't working */
         MessageQueue& aMsgQ = (*_map)[aMsgType];
         aMsgQ.enqueueMessage(aStringMessage);
      

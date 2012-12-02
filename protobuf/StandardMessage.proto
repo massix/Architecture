@@ -27,6 +27,15 @@ message BackendRegistrationStatus {
 	required bool status = 1;
 }
 
+message BackendRequestMessage {
+    required string messageType = 1;
+    repeated string otherMessages = 2;
+}
+
+message BackendResponseMessage {
+    required string messageType = 1;
+    required string serializedMessage = 2;
+}
 
 service FrontendHandling {
     rpc RegisterBackend (BackendRegistration) returns (BackendRegistrationStatus);

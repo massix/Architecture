@@ -57,7 +57,6 @@ protected:
     std::string _confXml;
     zmq::context_t _zmqContext;
     zmq::socket_t _zmqSocket;
-    zmq::socket_t _beSocket;
     
     std::string _hostname;
     uint16_t    _port;
