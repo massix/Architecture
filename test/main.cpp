@@ -90,9 +90,16 @@ void* clientThread(void *ioArgs)
     zmq::message_t aZMQRequest(0);
     
     sendMessage(aBaseMessage, "LOGIN", aZMQSocket, aZMQRequest);
+    sleep(1);
+    
     sendMessage(aBaseMessage, "MOVE", aZMQSocket, aZMQRequest);
-    sendMessage(aBaseMessage, "CONTEXT", aZMQSocket, aZMQRequest);
+    sleep(1);
+    
+    sendMessage(aBaseMessage, "DATE", aZMQSocket, aZMQRequest);
+    sleep(5);
+    
     sendMessage(aBaseMessage, "QUIT", aZMQSocket, aZMQRequest);
+    sleep(1);
     
     aZMQSocket.close();
     
@@ -106,12 +113,25 @@ void* backendThread(void *ioArgs)
     struct MyBackend : public BackendItf {
         MyBackend(const std::string& iBackendName) : BackendItf(iBackendName) {};
         virtual ~MyBackend() {};
-        virtual bool handleMessage(const std::string& iSerializedMessage) { return true; }
-        virtual bool handlePollTimeout() { return true; }
-        virtual bool handleNoMessages() { return true; }
+        virtual bool handleMessage(const std::string& iSerializedMessage) {
+            std::cout << "MyBackend received a message O_O" << std::endl;
+            sleep(getPollTimeout());
+            return true;
+        }
+        virtual bool handlePollTimeout() {
+            std::cout << "Handle PollTimeout called" << std::endl;
+            return true;
+        }
+        virtual bool handleNoMessages() {
+            std::cout << "HandleNoMessage called" << std::endl;
+            sleep(getPollTimeout());
+            return true;
+        }
     } aBackend(aBackendName);
     
     aBackend.configure();
+    aBackend.start();
+
     return 0;
 }
 
@@ -119,20 +139,20 @@ int main(int argc, char *argv[])
 {
     pthread_t aLoginFrontendThread;
     pthread_t aMoveFrontendThread;
-    pthread_t aContextFrontendThread;
+    pthread_t aDateUsersFrontendThread;
     pthread_t aReceptorThread;
     pthread_t aClientThread;
     pthread_t aDateBackendThread;
 
-    // Start the Backend
-    pthread_create(&aDateBackendThread, 0, &backendThread, (void*) "HandleDate");
-
-    sleep(3);
-    
     // Start the Frontends
     pthread_create(&aLoginFrontendThread, 0, &frontendThread, (void*) "Login");
-    pthread_create(&aMoveFrontendThread, 0, &frontendThread, (void*) "Context");
-    pthread_create(&aContextFrontendThread, 0, &frontendThread, (void*) "Move");
+    pthread_create(&aMoveFrontendThread, 0, &frontendThread, (void*) "Move");
+    pthread_create(&aDateUsersFrontendThread, 0, &frontendThread, (void*) "DateUsers");
+    
+    sleep(3);
+    
+    // Start the Backend
+    pthread_create(&aDateBackendThread, 0, &backendThread, (void*) "HandleDate");
     
     // Start the Receptor
     pthread_create(&aReceptorThread, 0, &receptorThread, 0);
@@ -142,7 +162,7 @@ int main(int argc, char *argv[])
     
     pthread_join(aClientThread, 0);
     pthread_join(aReceptorThread, 0);
-    pthread_join(aContextFrontendThread, 0);
+    pthread_join(aDateUsersFrontendThread, 0);
     pthread_join(aMoveFrontendThread, 0);
     pthread_join(aLoginFrontendThread, 0);
     pthread_join(aDateBackendThread, 0);

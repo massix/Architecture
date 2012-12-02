@@ -5,7 +5,7 @@
     <frontend host="localhost" port="10020" />
         
     <!-- Every polling lasts no more than 3 seconds -->
-    <poll timeout="3" />
+    <poll timeout="2" />
 
 	<!-- Handle messages with this priority -->
 	<message type="DATE" />

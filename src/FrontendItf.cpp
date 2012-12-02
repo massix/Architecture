@@ -32,8 +32,9 @@ struct Callable
         zmq::context_t aContext(1);
         zmq::socket_t aSocket(aContext, ZMQ_REP);
         std::string aBEPort("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_port));
-        
         aSocket.bind(aBEPort.c_str());
+        
+        LOG_MSG("Receiving Backends on: " + aBEPort);
         
         while (*_status) {
             zmq::pollitem_t aPollItems[] = {
@@ -60,8 +61,10 @@ struct Callable
                     MessageQueue& aMsgQ = (*_map)[aRequestMessage.messagetype()];
                     std::string anEncodedMsg = aMsgQ.dequeueMessage();
                     
-                    aResponseMessage.set_messagetype(aRequestMessage.messagetype());
-                    aResponseMessage.set_serializedmessage(anEncodedMsg);
+                    if (anEncodedMsg != "") {
+                        aResponseMessage.set_messagetype(aRequestMessage.messagetype());
+                        aResponseMessage.set_serializedmessage(anEncodedMsg);
+                    }
                 }
                 
                 // We might have other messages that BE is able to handle !
@@ -70,8 +73,10 @@ struct Callable
                         if (_map->find(aMessage) != _map->end()) {
                             std::string anEncodedMsg = (*_map)[aMessage].dequeueMessage();
                             
-                            aResponseMessage.set_messagetype(aMessage);
-                            aResponseMessage.set_serializedmessage(anEncodedMsg);
+                            if (anEncodedMsg != "") {
+                                aResponseMessage.set_messagetype(aMessage);
+                                aResponseMessage.set_serializedmessage(anEncodedMsg);
+                            }
                             break;
                         }
                     }
@@ -83,13 +88,6 @@ struct Callable
                 zmq::message_t aZmqResponse(aSerializedResponse.size());
                 memcpy(aZmqResponse.data(), aSerializedResponse.c_str(), aSerializedResponse.size());
                 aSocket.send(aZmqResponse);
-            }
-
-            std::cout << " SON: Map size: " << _map->size() << std::endl;
-            bforeach(const BackendMap::value_type& aPair, (*_map))
-            {
-                std::cout << " SON: Key  " << aPair.first << std::endl;
-                std::cout << " SON: Size " << aPair.second.size() << std::endl;
             }
         }
     }
@@ -172,9 +170,7 @@ void FrontendItf::start()
     std::string aZMQString("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_port));
     
     LOG_MSG("Bound to: " + aZMQString);
-    
-    std::cout << "_map: " << _map << std::endl;
-    
+        
     *_sonStatus = true;
     
     startBackendListener();

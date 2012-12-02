@@ -121,18 +121,22 @@ void BackendItf::start()
         
         _socket.send(aZmqRequest);
         
-        zmq::poll(&aPollItems[0], 1, _config._pollTimeoutSeconds seconds);
-        if (aPollItems[0].revents & ZMQ_POLLIN) {
-            zmq::message_t aResponse;
-            _socket.recv(&aResponse);
-            
-            std::string aSerializedResponse((const char*) aResponse.data());
-            ReceptorMessages::BackendResponseMessage aResponseMessage;
-            aResponseMessage.ParseFromString(aSerializedResponse);
-            
-            if (aResponseMessage.messagetype() == "EMPTY") handleNoMessages();
-            else handleMessage(aResponseMessage.serializedmessage());
+        while (true) {
+            zmq::poll(&aPollItems[0], 1, _config._pollTimeoutSeconds seconds);
+            if (aPollItems[0].revents & ZMQ_POLLIN) {
+                zmq::message_t aResponse;
+                _socket.recv(&aResponse);
+                
+                std::string aSerializedResponse((const char*) aResponse.data());
+                ReceptorMessages::BackendResponseMessage aResponseMessage;
+                aResponseMessage.ParseFromString(aSerializedResponse);
+                
+                if (aResponseMessage.messagetype() == "EMPTY") handleNoMessages();
+                else handleMessage(aResponseMessage.serializedmessage());
+                
+                break;
+            }
+            else handlePollTimeout();
         }
-        else handlePollTimeout();
     }
 }
