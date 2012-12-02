@@ -4,6 +4,8 @@
     <message type="LOGIN" routing="tcp://localhost:9001" />
     <message type="MOVE" routing="tcp://localhost:9002" />
     <message type="CONTEXT" routing="tcp://localhost:9003" />
-		<message type="DATE" routing="tcp://localhost:9020" />
-		<message type="USERS" routing="tcp://localhost:9020" />
+    
+    <!-- Real "working" frontend -->
+    <message type="DATE" routing="tcp://localhost:9020" />
+	<message type="USERS" routing="tcp://localhost:9020" />
 </RouterConfig>

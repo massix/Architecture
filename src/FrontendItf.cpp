@@ -43,8 +43,7 @@ struct Callable
             /* Expects address of first socket */
             zmq::poll(&aPollItems[0], 1, 3 * (1000 * 1000));
             
-            if (aPollItems[0].revents & ZMQ_POLLIN)
-            {
+            if (aPollItems[0].revents & ZMQ_POLLIN) {
                 LOG_MSG("Processing Backend request");
                 zmq::message_t aMessage;
                 aSocket.recv(&aMessage);
@@ -57,13 +56,25 @@ struct Callable
                 aResponseMessage.set_messagetype("EMPTY");
                 aResponseMessage.set_serializedmessage("EMPTY");
                 
-                if (_map->find(aRequestMessage.messagetype()) != _map->end())
-                {
+                if (_map->find(aRequestMessage.messagetype()) != _map->end()) {
                     MessageQueue& aMsgQ = (*_map)[aRequestMessage.messagetype()];
                     std::string anEncodedMsg = aMsgQ.dequeueMessage();
                     
                     aResponseMessage.set_messagetype(aRequestMessage.messagetype());
                     aResponseMessage.set_serializedmessage(anEncodedMsg);
+                }
+                
+                // We might have other messages that BE is able to handle !
+                else if (aRequestMessage.othermessages().size() > 0) {
+                    bforeach(const std::string& aMessage, aRequestMessage.othermessages()) {
+                        if (_map->find(aMessage) != _map->end()) {
+                            std::string anEncodedMsg = (*_map)[aMessage].dequeueMessage();
+                            
+                            aResponseMessage.set_messagetype(aMessage);
+                            aResponseMessage.set_serializedmessage(anEncodedMsg);
+                            break;
+                        }
+                    }
                 }
                 
                 std::string aSerializedResponse;

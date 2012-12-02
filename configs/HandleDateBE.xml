@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Backend name="HandleDate" owner="Massimo Gengarelli" email="massimo.gengarelli@icloud.com">
+    <!-- Connect to the proper FE -->
+    <frontend host="localhost" port="10020" />
+        
+    <!-- Every polling lasts no more than 3 seconds -->
+    <poll timeout="3" />
+
+	<!-- Handle messages with this priority -->
+	<message type="DATE" />
+</Backend>

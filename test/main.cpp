@@ -14,8 +14,10 @@
 #include <exception>
 #include <pthread.h>
 
+#include "BackendItf.h"
 #include "FrontendItf.h"
 #include "Receptor.h"
+#include "BackendItf.h"
 #include "StandardMessage.pb.h"
 
 void craftMessage(ReceptorMessages::BaseMessage& ioMessage, const std::string& iMessage)
@@ -97,6 +99,22 @@ void* clientThread(void *ioArgs)
     return 0;
 }
 
+void* backendThread(void *ioArgs)
+{
+    std::string aBackendName((const char*) ioArgs);
+    
+    struct MyBackend : public BackendItf {
+        MyBackend(const std::string& iBackendName) : BackendItf(iBackendName) {};
+        virtual ~MyBackend() {};
+        virtual bool handleMessage(const std::string& iSerializedMessage) { return true; }
+        virtual bool handlePollTimeout() { return true; }
+        virtual bool handleNoMessages() { return true; }
+    } aBackend(aBackendName);
+    
+    aBackend.configure();
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     pthread_t aLoginFrontendThread;
@@ -104,6 +122,12 @@ int main(int argc, char *argv[])
     pthread_t aContextFrontendThread;
     pthread_t aReceptorThread;
     pthread_t aClientThread;
+    pthread_t aDateBackendThread;
+
+    // Start the Backend
+    pthread_create(&aDateBackendThread, 0, &backendThread, (void*) "HandleDate");
+
+    sleep(3);
     
     // Start the Frontends
     pthread_create(&aLoginFrontendThread, 0, &frontendThread, (void*) "Login");
@@ -121,6 +145,7 @@ int main(int argc, char *argv[])
     pthread_join(aContextFrontendThread, 0);
     pthread_join(aMoveFrontendThread, 0);
     pthread_join(aLoginFrontendThread, 0);
+    pthread_join(aDateBackendThread, 0);
     
     return 0;
 }
