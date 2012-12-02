@@ -181,11 +181,7 @@ void FrontendItf::start()
         zmq::message_t aZMQMessage;
         _zmqSocket.recv(&aZMQMessage);
         std::string aStringMessage((const char*) aZMQMessage.data(), aZMQMessage.size());
-        if ("QUIT" == aStringMessage) {
-            *_sonStatus = false;
-            break;
-        }
-        
+
         ReceptorMessages::BaseMessage aRecvMessage;
         aRecvMessage.ParseFromString(aStringMessage);
         

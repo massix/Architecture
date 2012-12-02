@@ -74,8 +74,6 @@ void Receptor::startServer() throw(ReceptorException) {
             zmq::message_t aReplyMessage(4);
             memcpy((void*) aReplyMessage.data(), "ACK", 3);
             _socket.send(aReplyMessage);
-            
-            if (aBaseMessage.messagetype() == "QUIT") break;
         } catch (std::exception& e) {
             std::cerr << e.what() << std::endl;
         }
@@ -88,21 +86,7 @@ void Receptor::stopServer() throw(ReceptorException) {
     _socket.close();
 }
 
-void Receptor::routeMessage(ReceptorMessages::BaseMessage *ioBaseMessage) {
-    // QUIT message terminates all the FEs
-    if (ioBaseMessage->messagetype() == "QUIT") {
-        std::map<std::string, zmq::socket_t*>::iterator anIte;
-        for (anIte = _feSockets.begin(); anIte != _feSockets.end(); ++anIte) {
-            zmq::message_t aQuitMessage(4);
-            memcpy(aQuitMessage.data(), "QUIT", 4);
-            anIte->second->send(aQuitMessage);
-            LOG_MSG("Asking FE " + anIte->first + " to terminate");
-            anIte->second->close();
-        }
-        
-        return;
-    }
-    
+void Receptor::routeMessage(ReceptorMessages::BaseMessage *ioBaseMessage) {   
     try {
         string& aDestination = _routingMap[ioBaseMessage->messagetype()];
         LOG_MSG("Routing message to: " + aDestination);
