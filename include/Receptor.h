@@ -52,7 +52,7 @@ private:
     // Not implemented on purpose
     Receptor(const Receptor& iRight);
     Receptor& operator=(const Receptor& iRight);
-    void routeMessage(
+    ReceptorMessages::ResponseMessage routeMessage(
         ReceptorMessages::BaseMessage* ioBaseMessage);
     void configure(const std::string& iConfFile);
     

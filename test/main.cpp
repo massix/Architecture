@@ -11,12 +11,14 @@
 #include <string>
 #include <unistd.h>
 #include <zmq.hpp>
+#include <zmq_utils.h>
 #include <exception>
 #include <pthread.h>
 #include <stdint.h>
 #include <signal.h>
 #include <Log.h>
 #include <ctime>
+#include <protobuf/message.h>
 
 #include "BackendItf.h"
 #include "FrontendItf.h"
@@ -24,43 +26,25 @@
 #include "BackendItf.h"
 #include "StandardMessage.pb.h"
 
-void craftMessage(ReceptorMessages::BaseMessage& ioMessage, const std::string& iMessage)
-{
-    ioMessage.Clear();
-
-    ioMessage.set_messagetype(iMessage);
-    ioMessage.set_userid(17);
-    ioMessage.set_shapassword("shaPassword");
-    ioMessage.set_options("MVT+1'GEN+14:123");
-}
-
-void encapsulateMessage(zmq::message_t& ioMessage, const ReceptorMessages::BaseMessage& iMessage)
-{
-    std::string aSerializedMessage;
-    iMessage.SerializeToString(&aSerializedMessage);
-    ioMessage.rebuild(aSerializedMessage.size());
-    memcpy((void *) ioMessage.data(), aSerializedMessage.c_str(), aSerializedMessage.size());
-}
-
-void sendAndReceive(zmq::socket_t& ioSocket, zmq::message_t& ioMessage)
-{
-    ioSocket.send(ioMessage);
-    ioSocket.recv(&ioMessage);
+void sendMessage(zmq::socket_t& ioSocket, const std::string& iMessage, ReceptorMessages::ResponseMessage& oMessage) {
+    zmq::message_t aMessage(iMessage.size());
+    memcpy(aMessage.data(), iMessage.c_str(), iMessage.size());
+    ioSocket.send(aMessage);
     
-    std::string aResponse((const char*)ioMessage.data(), 3);
-    LOG_MSG("Client received back: " + aResponse);
-    assert(aResponse == "ACK");
+    zmq::message_t aResponse;
+    ioSocket.recv(&aResponse);
+    
+    oMessage.Clear();
+    oMessage.ParseFromString((const char *) aResponse.data());
+    
+    LOG_MSG("Client finished conversation, receiving back: " + oMessage.messagetype());
 }
 
-void sendMessage(
-    ReceptorMessages::BaseMessage& ioMessage,
-    const std::string& iMessage,
-    zmq::socket_t& ioSocket,
-    zmq::message_t& ioZMessage)
-{
-    craftMessage(ioMessage, iMessage);
-    encapsulateMessage(ioZMessage, ioMessage);
-    sendAndReceive(ioSocket, ioZMessage);
+void sendProtobufMessage(zmq::socket_t& ioSocket, const google::protobuf::Message* const iMessage, ReceptorMessages::ResponseMessage& oMessage) {
+    std::string aSerializedMessage;
+    iMessage->SerializeToString(&aSerializedMessage);
+    
+    sendMessage(ioSocket, aSerializedMessage, oMessage);
 }
 
 void* frontendThread(void* ioFeId)
@@ -92,32 +76,41 @@ void* clientThread(void *ioArgs)
     
     zmq::message_t aZMQRequest(0);
     
-    // Send DATE message
+    // Prepare a Global Message
     ReceptorMessages::BaseMessage aGlobalBaseMessage;
-    aGlobalBaseMessage.set_messagetype("DATE");
+    ReceptorMessages::ResponseMessage aResponseMessage;
+
     aGlobalBaseMessage.set_userid(17);
     aGlobalBaseMessage.set_shapassword("Password");
     
-    ReceptorMessages::DateRequest aDateRequest;
-    aDateRequest.set_format("YYYY-MM-DD");
     
-    std::string aSerializedDateRequest;
-    aDateRequest.SerializeToString(&aSerializedDateRequest);
+    // Send DATE request
+    ReceptorMessages::DateRequest aDateRequest;
+    ReceptorMessages::DateResponse aDateResponse;
+    aGlobalBaseMessage.set_messagetype("DATE");
+    
+    aDateRequest.set_format("YYYY-MM-DD");
+    std::string aSerializedDateRequest = aDateRequest.SerializeAsString();
     aGlobalBaseMessage.set_options(aSerializedDateRequest);
-    encapsulateMessage(aZMQRequest, aGlobalBaseMessage);
-    sendAndReceive(aZMQSocket, aZMQRequest);
+    sendProtobufMessage(aZMQSocket, &aGlobalBaseMessage, aResponseMessage);
+    aDateResponse.ParseFromString(aResponseMessage.serializedmessage());
+    LOG_MSG("Client received response: " + aDateResponse.date());
+    
     sleep(5);
+    
     
     // Send USERS message
     ReceptorMessages::UsersRequest aUsersRequestMessage;
+    ReceptorMessages::UsersResponse aUsersResponse;
     aGlobalBaseMessage.set_messagetype("USERS");
     
     aUsersRequestMessage.set_user("test");
-    std::string aSerializedUsersRequest;
-    aUsersRequestMessage.SerializeToString(&aSerializedUsersRequest);
+    std::string aSerializedUsersRequest = aUsersRequestMessage.SerializeAsString();
     aGlobalBaseMessage.set_options(aSerializedUsersRequest);
-    encapsulateMessage(aZMQRequest, aGlobalBaseMessage);
-    sendAndReceive(aZMQSocket, aZMQRequest);
+    sendProtobufMessage(aZMQSocket, &aGlobalBaseMessage, aResponseMessage);
+    aUsersResponse.ParseFromString(aResponseMessage.serializedmessage());
+    LOG_MSG("Client received response: " + aUsersResponse.infos());
+    
     sleep(5);
 
     

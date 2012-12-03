@@ -54,6 +54,7 @@ protected:
     uint16_t    _bePort;
     boost::shared_ptr<BackendMap> _map;
     boost::shared_ptr<bool> _sonStatus;
-        
+    std::vector<ReceptorMessages::ResponseMessage> _responses;
+    
 };
 

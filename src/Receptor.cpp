@@ -68,11 +68,11 @@ void Receptor::startServer() throw(ReceptorException) {
             aBaseMessage.ParseFromString((const char*) aMessage.data());
             
             LOG_MSG("Received " + aBaseMessage.messagetype());
-            routeMessage(&aBaseMessage);
+            ReceptorMessages::ResponseMessage aResponse(routeMessage(&aBaseMessage));
             
-            // Send a fake reply
-            zmq::message_t aReplyMessage(4);
-            memcpy((void*) aReplyMessage.data(), "ACK", 3);
+            std::string aSerializedResponse(aResponse.SerializeAsString());
+            zmq::message_t aReplyMessage(aSerializedResponse.size());
+            memcpy((void*) aReplyMessage.data(), aSerializedResponse.c_str(), aSerializedResponse.size());
             _socket.send(aReplyMessage);
         } catch (std::exception& e) {
             std::cerr << e.what() << std::endl;
@@ -86,7 +86,7 @@ void Receptor::stopServer() throw(ReceptorException) {
     _socket.close();
 }
 
-void Receptor::routeMessage(ReceptorMessages::BaseMessage *ioBaseMessage) {   
+ReceptorMessages::ResponseMessage Receptor::routeMessage(ReceptorMessages::BaseMessage *ioBaseMessage) {
     try {
         string& aDestination = _routingMap[ioBaseMessage->messagetype()];
         LOG_MSG("Routing message to: " + aDestination);
@@ -105,10 +105,15 @@ void Receptor::routeMessage(ReceptorMessages::BaseMessage *ioBaseMessage) {
 
         // Receive the reply
         aSocket->recv(&aResponse);
-        LOG_MSG("Router response received");
+        ReceptorMessages::ResponseMessage aResponseMessage;
+        aResponseMessage.ParseFromString((const char *) aResponse.data());
+        LOG_MSG("Router response received: " + aResponseMessage.messagetype());
+        return aResponseMessage;
     }
     catch (const std::exception& e) {
+        ReceptorMessages::ResponseMessage anEmptyMsg;
         std::cerr << "Exception: " << e.what() << std::endl;
+        return anEmptyMsg;
     }
 }
 
