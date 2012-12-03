@@ -34,3 +34,11 @@ message DateRequest {
 message DateResponse {
     required string date = 1;
 }
+
+message UsersRequest {
+    required string user = 1;
+}
+
+message UsersResponse {
+    required string infos = 1;
+}

@@ -39,6 +39,7 @@ public:
     std::size_t size() const;
     
     void clear();
+    bool empty() const;
     
 protected:
     std::list<std::string> _messagesList;

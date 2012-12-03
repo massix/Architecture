@@ -90,9 +90,9 @@ void* clientThread(void *ioArgs)
     sleep(6);
     aZMQSocket.connect("tcp://localhost:9000");
     
-    ReceptorMessages::BaseMessage aBaseMessage;
     zmq::message_t aZMQRequest(0);
-        
+    
+    // Send DATE message
     ReceptorMessages::BaseMessage aGlobalBaseMessage;
     aGlobalBaseMessage.set_messagetype("DATE");
     aGlobalBaseMessage.set_userid(17);
@@ -108,6 +108,19 @@ void* clientThread(void *ioArgs)
     sendAndReceive(aZMQSocket, aZMQRequest);
     sleep(5);
     
+    // Send USERS message
+    ReceptorMessages::UsersRequest aUsersRequestMessage;
+    aGlobalBaseMessage.set_messagetype("USERS");
+    
+    aUsersRequestMessage.set_user("test");
+    std::string aSerializedUsersRequest;
+    aUsersRequestMessage.SerializeToString(&aSerializedUsersRequest);
+    aGlobalBaseMessage.set_options(aSerializedUsersRequest);
+    encapsulateMessage(aZMQRequest, aGlobalBaseMessage);
+    sendAndReceive(aZMQSocket, aZMQRequest);
+    sleep(5);
+
+    
     aZMQSocket.close();
     
     return 0;
@@ -120,21 +133,36 @@ void* backendThread(void *ioArgs)
     struct MyBackend : public BackendItf {
         MyBackend(const std::string& iBackendName) : BackendItf(iBackendName) {};
         virtual ~MyBackend() {};
-        virtual bool handleMessage(const std::string& iSerializedMessage, std::string& oResponse) {
-            LOG_MSG("MyBackend received a message");
-            ReceptorMessages::DateRequest aDateRequestMsg;
-            aDateRequestMsg.ParseFromString(iSerializedMessage);
-            LOG_MSG("Requested format: " + aDateRequestMsg.format());
+        virtual bool handleMessage(const ReceptorMessages::BackendResponseMessage& iMessage, std::string& oResponse) {
+            if (iMessage.messagetype() == "DATE") {
+                LOG_MSG("Handling DATE message");
+                ReceptorMessages::DateRequest aDateRequestMsg;
+                aDateRequestMsg.ParseFromString(iMessage.serializedmessage());
+                LOG_MSG("Requested format: " + aDateRequestMsg.format());
 
-            std::time_t aTime;
-            aTime = time(0);
+                std::time_t aTime;
+                aTime = time(0);
 
-            std::string aResponse(ctime(&aTime));
-            ReceptorMessages::DateResponse aDateResponseMsg;
-            aDateResponseMsg.set_date(aResponse);
-            aDateResponseMsg.SerializeToString(&oResponse);
+                std::string aResponse(ctime(&aTime));
+                ReceptorMessages::DateResponse aDateResponseMsg;
+                aDateResponseMsg.set_date(aResponse);
+                aDateResponseMsg.SerializeToString(&oResponse);
 
-            LOG_MSG("Sending response: " + aResponse);
+                LOG_MSG("Sending response: " + aResponse);
+            }
+            
+            if (iMessage.messagetype() == "USERS") {
+                LOG_MSG("Handling USERS message");
+                ReceptorMessages::UsersRequest anUsersRequestMsg;
+                anUsersRequestMsg.ParseFromString(iMessage.serializedmessage());
+                LOG_MSG("Requested user: " + anUsersRequestMsg.user());
+                
+                ReceptorMessages::UsersResponse aResponse;
+                aResponse.set_infos("Not logged in");
+                aResponse.SerializeToString(&oResponse);
+                
+                LOG_MSG("Sending response to USERS msg");
+            }
 
             return true;
         }
@@ -157,8 +185,8 @@ void* backendThread(void *ioArgs)
 
 int main(int argc, char *argv[])
 {
-    pthread_t aLoginFrontendThread;
-    pthread_t aMoveFrontendThread;
+//    pthread_t aLoginFrontendThread;
+//    pthread_t aMoveFrontendThread;
     pthread_t aDateUsersFrontendThread;
     pthread_t aReceptorThread;
     pthread_t aClientThread;
@@ -184,8 +212,8 @@ int main(int argc, char *argv[])
     pthread_join(aClientThread, 0);
     
     // Kill the other processes
-    pthread_kill(aLoginFrontendThread, SIGINT);
-    pthread_join(aLoginFrontendThread, 0);
+//    pthread_kill(aLoginFrontendThread, SIGINT);
+//    pthread_join(aLoginFrontendThread, 0);
     
     pthread_kill(aReceptorThread, SIGINT);
     pthread_join(aReceptorThread, 0);

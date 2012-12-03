@@ -69,6 +69,7 @@ struct BackendReceptorThread
                     if (_map->find(aRequestMessage.messagetype()) != _map->end()) {
                         MessageQueue& aMsgQ = (*_map)[aRequestMessage.messagetype()];
                         std::string anEncodedMsg = aMsgQ.dequeueMessage();
+                        if (aMsgQ.empty()) _map->erase(aRequestMessage.messagetype());
                         
                         if (anEncodedMsg != "") {
                             aResponseMessage.set_messagetype(aRequestMessage.messagetype());
@@ -81,6 +82,7 @@ struct BackendReceptorThread
                         bforeach(const std::string& aMessage, aRequestMessage.othermessages()) {
                             if (_map->find(aMessage) != _map->end()) {
                                 std::string anEncodedMsg = (*_map)[aMessage].dequeueMessage();
+                                if ((*_map)[aMessage].empty()) _map->erase(aMessage);
                                 
                                 if (anEncodedMsg != "") {
                                     aResponseMessage.set_messagetype(aMessage);
@@ -130,7 +132,8 @@ FrontendItf::FrontendItf(const std::string& iId) :
     _bePort(0),
     _map(new BackendMap),
     _sonStatus(new bool(false))
-{    
+{
+    LOG_MSG("Configuring FE " + _frontendId + " from " + _confXml);
 }
 
 FrontendItf::~FrontendItf()

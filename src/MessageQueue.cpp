@@ -54,3 +54,7 @@ std::size_t MessageQueue::size() const
 {
     return _messagesList.size();
 }
+
+bool MessageQueue::empty() const {
+    return !hasMessages();
+}

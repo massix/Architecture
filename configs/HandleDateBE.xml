@@ -9,4 +9,5 @@
 
 	<!-- Handle messages with this priority -->
 	<message type="DATE" />
+    <message type="USERS" />
 </Backend>

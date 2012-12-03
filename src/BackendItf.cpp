@@ -115,7 +115,7 @@ void BackendItf::start()
         
         if (_config._messagesHandled.size() >= 2) {
             for (int i = 1; i < _config._messagesHandled.size(); i++) {
-                aRequestMessage.set_othermessages(i-1, _config._messagesHandled[i]);
+                aRequestMessage.add_othermessages(_config._messagesHandled[i]);
             }
         }
         
@@ -149,7 +149,7 @@ void BackendItf::start()
                     ReceptorMessages::ResponseMessage aBEResponseMessage;
                     aBEResponseMessage.set_messagetype("ERROR");
 
-                    if (handleMessage(aResponseMessage.serializedmessage(), aBackendResponse)) {
+                    if (handleMessage(aResponseMessage, aBackendResponse)) {
                         aBEResponseMessage.set_messagetype(aResponseMessage.messagetype());
                         aBEResponseMessage.set_serializedmessage(aBackendResponse);
                     }
