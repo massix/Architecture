@@ -23,11 +23,11 @@
 
 #define bforeach BOOST_FOREACH
 
-struct Callable
+struct BackendReceptorThread
 {
-    Callable (boost::shared_ptr<BackendMap>& iMap, boost::shared_ptr<bool>& iStatus) :
+    BackendReceptorThread (boost::shared_ptr<BackendMap>& iMap, boost::shared_ptr<bool>& iStatus) :
         _map(iMap), _status(iStatus) {};
-    virtual ~Callable() {};
+    virtual ~BackendReceptorThread() {};
     void operator()() {
         zmq::context_t aContext(1);
         zmq::socket_t aSocket(aContext, ZMQ_REP);
@@ -182,7 +182,7 @@ const std::string FrontendItf::getConfXml() const
 
 void FrontendItf::startBackendListener()
 {
-    Callable aCallable(_map, _sonStatus);
+    BackendReceptorThread aCallable(_map, _sonStatus);
     aCallable._hostname = _hostname;
     aCallable._port = _bePort;
     aCallable._frontendId = _frontendId;
