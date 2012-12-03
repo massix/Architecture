@@ -36,16 +36,7 @@ public:
     void start();
     void startBackendListener();
     void stop();
-    
-    // Debugging
-    friend std::ostream& operator<<(std::ostream& ostream, FrontendItf& iFrontend) {
-        ostream << "Frontend: ";
-        ostream << iFrontend._frontendId;
-        ostream << " running on: ";
-        ostream << iFrontend._hostname << ":" << iFrontend._port;
-        return ostream;
-    };
-    
+      
 private:
     // Avoid other construction methods
     FrontendItf();
