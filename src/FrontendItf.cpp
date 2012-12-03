@@ -34,66 +34,89 @@ struct Callable
         std::string aBEPort("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_port));
         aSocket.bind(aBEPort.c_str());
         
-        LOG_MSG("Receiving Backends on: " + aBEPort);
+        LOG_MSG(_frontendId + " receiving Backends on: " + aBEPort);
         
         while (*_status) {
             zmq::pollitem_t aPollItems[] = {
-                {aSocket, 0, ZMQ_POLLIN, 0 }
+                { aSocket, 0, ZMQ_POLLIN, 0 }
             };
-            
+
             /* Expects address of first socket */
             zmq::poll(&aPollItems[0], 1, 3 * (1000 * 1000));
             
             if (aPollItems[0].revents & ZMQ_POLLIN) {
-                LOG_MSG("Processing Backend request");
+                LOG_MSG(_frontendId + " processing Backend request");
                 zmq::message_t aMessage;
                 aSocket.recv(&aMessage);
                 
+                /* FIXME: These two messages have to be distinguished */
+                ReceptorMessages::BaseMessage aBaseMessage;
                 ReceptorMessages::BackendRequestMessage aRequestMessage;
-                aRequestMessage.ParseFromString(std::string((const char *) aMessage.data()));
+                ReceptorMessages::ResponseMessage aGotResponseMessage;
                 
-                // Prepare for reply
-                ReceptorMessages::BackendResponseMessage aResponseMessage;
-                aResponseMessage.set_messagetype("EMPTY");
-                aResponseMessage.set_serializedmessage("EMPTY");
+                aBaseMessage.ParseFromString((const char *) aMessage.data());
                 
-                if (_map->find(aRequestMessage.messagetype()) != _map->end()) {
-                    MessageQueue& aMsgQ = (*_map)[aRequestMessage.messagetype()];
-                    std::string anEncodedMsg = aMsgQ.dequeueMessage();
+                // Backend asks for new messages
+                if (aBaseMessage.messagetype() == "REQUEST") {
+                    LOG_MSG(_frontendId + " backend is asking for new messages");
+                    aRequestMessage.ParseFromString(aBaseMessage.options());
                     
-                    if (anEncodedMsg != "") {
-                        aResponseMessage.set_messagetype(aRequestMessage.messagetype());
-                        aResponseMessage.set_serializedmessage(anEncodedMsg);
-                    }
-                }
-                
-                // We might have other messages that BE is able to handle !
-                else if (aRequestMessage.othermessages().size() > 0) {
-                    bforeach(const std::string& aMessage, aRequestMessage.othermessages()) {
-                        if (_map->find(aMessage) != _map->end()) {
-                            std::string anEncodedMsg = (*_map)[aMessage].dequeueMessage();
-                            
-                            if (anEncodedMsg != "") {
-                                aResponseMessage.set_messagetype(aMessage);
-                                aResponseMessage.set_serializedmessage(anEncodedMsg);
-                            }
-                            break;
+                    // Prepare for reply
+                    ReceptorMessages::BackendResponseMessage aResponseMessage;
+                    aResponseMessage.set_messagetype("EMPTY");
+                    aResponseMessage.set_serializedmessage("EMPTY");
+                    
+                    if (_map->find(aRequestMessage.messagetype()) != _map->end()) {
+                        MessageQueue& aMsgQ = (*_map)[aRequestMessage.messagetype()];
+                        std::string anEncodedMsg = aMsgQ.dequeueMessage();
+                        
+                        if (anEncodedMsg != "") {
+                            aResponseMessage.set_messagetype(aRequestMessage.messagetype());
+                            aResponseMessage.set_serializedmessage(anEncodedMsg);
                         }
                     }
+                    
+                    // We might have other messages that BE is able to handle !
+                    else if (aRequestMessage.othermessages().size() > 0) {
+                        bforeach(const std::string& aMessage, aRequestMessage.othermessages()) {
+                            if (_map->find(aMessage) != _map->end()) {
+                                std::string anEncodedMsg = (*_map)[aMessage].dequeueMessage();
+                                
+                                if (anEncodedMsg != "") {
+                                    aResponseMessage.set_messagetype(aMessage);
+                                    aResponseMessage.set_serializedmessage(anEncodedMsg);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    
+                    std::string aSerializedResponse;
+                    aResponseMessage.SerializeToString(&aSerializedResponse);
+                    
+                    zmq::message_t aZmqResponse(aSerializedResponse.size());
+                    memcpy(aZmqResponse.data(), aSerializedResponse.c_str(), aSerializedResponse.size());
+                    aSocket.send(aZmqResponse);
                 }
                 
-                std::string aSerializedResponse;
-                aResponseMessage.SerializeToString(&aSerializedResponse);
-                
-                zmq::message_t aZmqResponse(aSerializedResponse.size());
-                memcpy(aZmqResponse.data(), aSerializedResponse.c_str(), aSerializedResponse.size());
-                aSocket.send(aZmqResponse);
+                // Backend finished processing a message
+                else {
+                    aGotResponseMessage.ParseFromString(std::string((const char *) aMessage.data()));
+                    LOG_MSG(_frontendId + " received response " + aGotResponseMessage.messagetype() + " from backend");
+                    // TODO: and here?!
+                    
+                    // Send fake response to BE
+                    zmq::message_t aFakeResponseForBe(3);
+                    memcpy(aFakeResponseForBe.data(), "OK", 2);
+                    aSocket.send(aFakeResponseForBe);
+                }
             }
         }
     }
     
     boost::shared_ptr<BackendMap>& _map;
     boost::shared_ptr<bool>& _status;
+    std::string _frontendId;
     std::string _hostname;
     uint16_t _port;
 };
@@ -162,6 +185,7 @@ void FrontendItf::startBackendListener()
     Callable aCallable(_map, _sonStatus);
     aCallable._hostname = _hostname;
     aCallable._port = _bePort;
+    aCallable._frontendId = _frontendId;
     boost::thread aThread(aCallable);
 }
 
@@ -169,7 +193,7 @@ void FrontendItf::start()
 {
     std::string aZMQString("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_port));
     
-    LOG_MSG("Bound to: " + aZMQString);
+    LOG_MSG(_frontendId + " bound to: " + aZMQString);
         
     *_sonStatus = true;
     
@@ -187,17 +211,17 @@ void FrontendItf::start()
         
         const std::string aMsgType(aRecvMessage.messagetype());
 
-        LOG_MSG("Storing message: " + aMsgType);
+        LOG_MSG(_frontendId + " storing message: " + aMsgType);
         MessageQueue& aMsgQ = (*_map)[aMsgType];
         aMsgQ.enqueueMessage(aRecvMessage.options());
      
-        LOG_MSG("Frontend enqueued message: " + aRecvMessage.messagetype());
+        LOG_MSG(_frontendId + " enqueued message: " + aRecvMessage.messagetype());
         // Send a Reply to the Receptor
         std::string aReply("ENQ:1");
         zmq::message_t aResponse(aReply.size());
         memcpy(aResponse.data(), aReply.c_str(), aReply.size());
         
-        LOG_MSG("Frontend sending reply");
+        LOG_MSG(_frontendId + " sending reply");
         
         _zmqSocket.send(aResponse);
     }

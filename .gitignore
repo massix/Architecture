@@ -28,3 +28,5 @@ src/frontend
 src/receptor
 
 test/.DS_Store
+
+.clang_complete

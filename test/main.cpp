@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <signal.h>
 #include <Log.h>
+#include <ctime>
 
 #include "BackendItf.h"
 #include "FrontendItf.h"
@@ -119,12 +120,22 @@ void* backendThread(void *ioArgs)
     struct MyBackend : public BackendItf {
         MyBackend(const std::string& iBackendName) : BackendItf(iBackendName) {};
         virtual ~MyBackend() {};
-        virtual bool handleMessage(const std::string& iSerializedMessage) {
+        virtual bool handleMessage(const std::string& iSerializedMessage, std::string& oResponse) {
             LOG_MSG("MyBackend received a message");
             ReceptorMessages::DateRequest aDateRequestMsg;
             aDateRequestMsg.ParseFromString(iSerializedMessage);
-            
             LOG_MSG("Requested format: " + aDateRequestMsg.format());
+
+            std::time_t aTime;
+            aTime = time(0);
+
+            std::string aResponse(ctime(&aTime));
+            ReceptorMessages::DateResponse aDateResponseMsg;
+            aDateResponseMsg.set_date(aResponse);
+            aDateResponseMsg.SerializeToString(&oResponse);
+
+            LOG_MSG("Sending response: " + aResponse);
+
             return true;
         }
         virtual bool handlePollTimeout() {
@@ -154,8 +165,8 @@ int main(int argc, char *argv[])
     pthread_t aDateBackendThread;
 
     // Start the Frontends
-    pthread_create(&aLoginFrontendThread, 0, &frontendThread, (void*) "Login");
-    pthread_create(&aMoveFrontendThread, 0, &frontendThread, (void*) "Move");
+//    pthread_create(&aLoginFrontendThread, 0, &frontendThread, (void*) "Login");
+//    pthread_create(&aMoveFrontendThread, 0, &frontendThread, (void*) "Move");
     pthread_create(&aDateUsersFrontendThread, 0, &frontendThread, (void*) "DateUsers");
     
     sleep(3);
@@ -182,11 +193,11 @@ int main(int argc, char *argv[])
     pthread_kill(aDateUsersFrontendThread, SIGINT);
     pthread_join(aDateUsersFrontendThread, 0);
     
-    pthread_kill(aMoveFrontendThread, SIGINT);
-    pthread_join(aMoveFrontendThread, 0);
+//    pthread_kill(aMoveFrontendThread, SIGINT);
+//    pthread_join(aMoveFrontendThread, 0);
 
-    pthread_kill(aDateBackendThread, SIGINT);
-    pthread_join(aDateBackendThread, 0);
+//    pthread_kill(aDateBackendThread, SIGINT);
+//    pthread_join(aDateBackendThread, 0);
     
     return 0;
 }

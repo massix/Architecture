@@ -46,7 +46,7 @@ public:
     
 protected:    
     /* Deal with messages */
-    virtual bool handleMessage(const std::string& iSerializedMessage) = 0;
+    virtual bool handleMessage(const std::string& iSerializedMessage, std::string& oResponse) = 0;
     
     /* Deal with poll timeout */
     virtual bool handlePollTimeout() = 0;

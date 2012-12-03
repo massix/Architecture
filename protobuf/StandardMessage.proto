@@ -6,15 +6,15 @@ package ReceptorMessages;
 // The Receptor *always* receives this message
 message BaseMessage {
     required string   messageType = 1;
-    required int32    userId = 2;
-    required string   shaPassword = 3;
+    optional int32    userId = 2;
+    optional string   shaPassword = 3;
     optional bytes   options = 4;
 }
 
 // The receptor *always* sends this message
 message ResponseMessage {
     required string    messageType = 1;
-    required string    serializedMessage = 2;
+    optional bytes     serializedMessage = 2;
 }
 
 message BackendRequestMessage {
