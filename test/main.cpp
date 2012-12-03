@@ -178,16 +178,12 @@ void* backendThread(void *ioArgs)
 
 int main(int argc, char *argv[])
 {
-//    pthread_t aLoginFrontendThread;
-//    pthread_t aMoveFrontendThread;
     pthread_t aDateUsersFrontendThread;
     pthread_t aReceptorThread;
     pthread_t aClientThread;
     pthread_t aDateBackendThread;
 
-    // Start the Frontends
-//    pthread_create(&aLoginFrontendThread, 0, &frontendThread, (void*) "Login");
-//    pthread_create(&aMoveFrontendThread, 0, &frontendThread, (void*) "Move");
+    // Start the Frontend
     pthread_create(&aDateUsersFrontendThread, 0, &frontendThread, (void*) "DateUsers");
     
     sleep(3);
@@ -205,20 +201,14 @@ int main(int argc, char *argv[])
     pthread_join(aClientThread, 0);
     
     // Kill the other processes
-//    pthread_kill(aLoginFrontendThread, SIGINT);
-//    pthread_join(aLoginFrontendThread, 0);
-    
     pthread_kill(aReceptorThread, SIGINT);
     pthread_join(aReceptorThread, 0);
     
     pthread_kill(aDateUsersFrontendThread, SIGINT);
     pthread_join(aDateUsersFrontendThread, 0);
     
-//    pthread_kill(aMoveFrontendThread, SIGINT);
-//    pthread_join(aMoveFrontendThread, 0);
+    pthread_kill(aDateBackendThread, SIGINT);
+    pthread_join(aDateBackendThread, 0);
 
-//    pthread_kill(aDateBackendThread, SIGINT);
-//    pthread_join(aDateBackendThread, 0);
-    
     return 0;
 }

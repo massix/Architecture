@@ -4,7 +4,7 @@
     <!-- Connect to the proper FE -->
     <frontend host="localhost" port="10020" />
         
-    <!-- Every polling lasts no more than 3 seconds -->
+    <!-- Every polling lasts no more than 2 seconds -->
     <poll timeout="2" />
 
 	<!-- Handle messages with this priority -->
