@@ -28,7 +28,7 @@ BackendItf::BackendItf(const std::string& iBackend) :
     _backend(iBackend),
 	_configured(false),
     _context(1),
-    _socket(_context, ZMQ_REQ)
+    _socket(_context, ZMQ_DEALER)
 {
 
 }
@@ -163,10 +163,6 @@ void BackendItf::start()
                     memcpy(aZmqMessageForFrontend.data(), aSerializedResponseForFrontend.c_str(), aSerializedResponseForFrontend.size());
 
                     _socket.send(aZmqMessageForFrontend);
-
-                    // This is done just to keep the conversation alive !
-                    zmq::message_t aFakeResponse;
-                    _socket.recv(&aFakeResponse);
                 }
                 
                 break;

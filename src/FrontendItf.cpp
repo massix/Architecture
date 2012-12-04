@@ -33,7 +33,7 @@ struct BackendReceptorThread
     virtual ~BackendReceptorThread() {};
     void operator()() {
         zmq::context_t aContext(1);
-        zmq::socket_t aSocket(aContext, ZMQ_REP);
+        zmq::socket_t aSocket(aContext, ZMQ_ROUTER);
         std::string aBEPort("tcp://" + _hostname + ":" + boost::lexical_cast<std::string>(_port));
         aSocket.bind(aBEPort.c_str());
         
@@ -49,10 +49,12 @@ struct BackendReceptorThread
             
             if (aPollItems[0].revents & ZMQ_POLLIN) {
                 LOG_MSG(_frontendId + " processing Backend request");
+                zmq::message_t anHeader;
+                zmq::message_t aSeparator;
                 zmq::message_t aMessage;
-                aSocket.recv(&aMessage);
+                aSocket.recv(&anHeader, ZMQ_RCVMORE); // HEADER, save it.
+                aSocket.recv(&aMessage); // Actual Payload
                 
-                /* FIXME: These two messages have to be distinguished */
                 ReceptorMessages::BaseMessage aBaseMessage;
                 ReceptorMessages::BackendRequestMessage aRequestMessage;
                 ReceptorMessages::ResponseMessage aGotResponseMessage;
@@ -101,6 +103,9 @@ struct BackendReceptorThread
                     
                     zmq::message_t aZmqResponse(aSerializedResponse.size());
                     memcpy(aZmqResponse.data(), aSerializedResponse.c_str(), aSerializedResponse.size());
+                    
+                    LOG_MSG(_frontendId + " answering back to the backend (" + aResponseMessage.messagetype() + ")");
+                    aSocket.send(anHeader, ZMQ_SNDMORE);
                     aSocket.send(aZmqResponse);
                 }
                 
@@ -111,11 +116,6 @@ struct BackendReceptorThread
                     // TODO: and here?!
                     _responses.push_back(aGotResponseMessage);
                     LOG_MSG("Response put in vector, new size is: " + boost::lexical_cast<std::string>(_responses.size()));
-                    
-                    // Send fake response to BE
-                    zmq::message_t aFakeResponseForBe(3);
-                    memcpy(aFakeResponseForBe.data(), "OK", 2);
-                    aSocket.send(aFakeResponseForBe);
                 }
             }
         }
