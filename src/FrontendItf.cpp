@@ -133,7 +133,7 @@ FrontendItf::FrontendItf(const std::string& iId) :
     _frontendId(iId),
     _confXml(_frontendId + "FE.xml"),
     _zmqContext(1),
-    _zmqSocket(_zmqContext, ZMQ_REP),
+    _zmqSocket(_zmqContext, ZMQ_ROUTER),
     _port(0),
     _bePort(0),
     _map(new BackendMap),
@@ -211,8 +211,16 @@ void FrontendItf::start()
     _zmqSocket.bind(aZMQString.c_str());
     
     while (true) {
+        zmq::message_t anHeader;
+        zmq::message_t anEmptySeparator;
         zmq::message_t aZMQMessage;
+
+        _zmqSocket.recv(&anHeader);
+        _zmqSocket.recv(&anEmptySeparator);
         _zmqSocket.recv(&aZMQMessage);
+
+        std::string aStringHeader((const char *) anHeader.data(), anHeader.size());
+        LOG_MSG(_frontendId + " received message from: " + aStringHeader);
         std::string aStringMessage((const char*) aZMQMessage.data(), aZMQMessage.size());
 
         ReceptorMessages::BaseMessage aRecvMessage;
@@ -238,6 +246,8 @@ void FrontendItf::start()
         LOG_MSG(_frontendId + " sending reply");
         LOG_MSG(_frontendId + " _responses size: " + boost::lexical_cast<std::string>(_responses.size()));
         
+        _zmqSocket.send(anHeader, ZMQ_SNDMORE);
+        _zmqSocket.send(anEmptySeparator, ZMQ_SNDMORE);
         _zmqSocket.send(aResponse);
     }
     
