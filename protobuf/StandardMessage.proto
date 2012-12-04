@@ -8,13 +8,14 @@ message BaseMessage {
     required string   messageType = 1;
     optional int32    userId = 2;
     optional string   shaPassword = 3;
-    optional bytes   options = 4;
+    optional bytes    options = 4;
 }
 
 // The receptor *always* sends this message
 message ResponseMessage {
     required string    messageType = 1;
     optional bytes     serializedMessage = 2;
+    optional bytes     serializedResponseHeader = 3;
 }
 
 message BackendRequestMessage {
@@ -24,7 +25,8 @@ message BackendRequestMessage {
 
 message BackendResponseMessage {
     required string messageType = 1;
-    required string serializedMessage = 2;
+    required bytes  serializedMessage = 2;
+    optional bytes  serializedHeader = 3;
 }
 
 message DateRequest {

@@ -35,6 +35,10 @@ public:
     
     void enqueueMessage(const std::string& iMessage);
     std::string dequeueMessage();
+    
+    void enqueueHeader(const std::string& iHeader);
+    std::string dequeueHeader();
+    
     bool hasMessages() const;
     std::size_t size() const;
     
@@ -43,4 +47,5 @@ public:
     
 protected:
     std::list<std::string> _messagesList;
+    std::list<std::string> _headersList;
 };

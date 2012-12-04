@@ -30,12 +30,28 @@ void MessageQueue::enqueueMessage(const std::string& iMessage)
     _messagesList.push_back(iMessage);
 }
 
+void MessageQueue::enqueueHeader(const std::string &iHeader)
+{
+    LOG_MSG("Enqueueing header");
+    _headersList.push_back(iHeader);
+}
+
 std::string MessageQueue::dequeueMessage()
 {
     std::string aRetValue("");
     if (hasMessages()) {
         aRetValue = _messagesList.back();
         _messagesList.pop_back();
+    }
+    return aRetValue;
+}
+
+std::string MessageQueue::dequeueHeader()
+{
+    std::string aRetValue("");
+    if (!_headersList.empty()) {
+        aRetValue = _headersList.back();
+        _headersList.pop_back();
     }
     return aRetValue;
 }

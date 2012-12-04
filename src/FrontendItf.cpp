@@ -28,8 +28,8 @@ struct BackendReceptorThread
     BackendReceptorThread (
         boost::shared_ptr<BackendMap>& iMap,
         boost::shared_ptr<bool>& iStatus,
-        std::vector<ReceptorMessages::ResponseMessage>& ioVector) :
-        _map(iMap), _status(iStatus), _responses(ioVector) {};
+        zmq::socket_t& iMainSocket) :
+        _map(iMap), _status(iStatus), _mainSocket(iMainSocket) {};
     virtual ~BackendReceptorThread() {};
     void operator()() {
         zmq::context_t aContext(1);
@@ -74,11 +74,14 @@ struct BackendReceptorThread
                     if (_map->find(aRequestMessage.messagetype()) != _map->end()) {
                         MessageQueue& aMsgQ = (*_map)[aRequestMessage.messagetype()];
                         std::string anEncodedMsg = aMsgQ.dequeueMessage();
+                        std::string anHeader = aMsgQ.dequeueHeader();
+                        
                         if (aMsgQ.empty()) _map->erase(aRequestMessage.messagetype());
                         
                         if (anEncodedMsg != "") {
                             aResponseMessage.set_messagetype(aRequestMessage.messagetype());
                             aResponseMessage.set_serializedmessage(anEncodedMsg);
+                            aResponseMessage.set_serializedheader((void *) anHeader.data(), anHeader.size());
                         }
                     }
                     
@@ -87,22 +90,24 @@ struct BackendReceptorThread
                         bforeach(const std::string& aMessage, aRequestMessage.othermessages()) {
                             if (_map->find(aMessage) != _map->end()) {
                                 std::string anEncodedMsg = (*_map)[aMessage].dequeueMessage();
+                                std::string anHeader = (*_map)[aMessage].dequeueHeader();
+                                
                                 if ((*_map)[aMessage].empty()) _map->erase(aMessage);
                                 
                                 if (anEncodedMsg != "") {
                                     aResponseMessage.set_messagetype(aMessage);
                                     aResponseMessage.set_serializedmessage(anEncodedMsg);
+                                    aResponseMessage.set_serializedheader((void *) anHeader.data(), anHeader.size());
                                 }
                                 break;
                             }
                         }
                     }
                     
-                    std::string aSerializedResponse;
-                    aResponseMessage.SerializeToString(&aSerializedResponse);
+                    std::string aSerializedResponse = aResponseMessage.SerializeAsString();
                     
                     zmq::message_t aZmqResponse(aSerializedResponse.size());
-                    memcpy(aZmqResponse.data(), aSerializedResponse.c_str(), aSerializedResponse.size());
+                    memcpy((void *) aZmqResponse.data(), aSerializedResponse.data(), aSerializedResponse.size());
                     
                     LOG_MSG(_frontendId + " answering back to the backend (" + aResponseMessage.messagetype() + ")");
                     aSocket.send(anHeader, ZMQ_SNDMORE);
@@ -111,11 +116,20 @@ struct BackendReceptorThread
                 
                 // Backend finished processing a message
                 else {
-                    aGotResponseMessage.ParseFromString(std::string((const char *) aMessage.data()));
+                    aGotResponseMessage.ParseFromArray(aMessage.data(), (int32_t) aMessage.size());
+                    std::string anHeader(
+                        static_cast<const char*>(aGotResponseMessage.serializedresponseheader().data()),
+                        aGotResponseMessage.serializedresponseheader().size());
                     LOG_MSG(_frontendId + " received response " + aGotResponseMessage.messagetype() + " from backend");
-                    // TODO: and here?!
-                    _responses.push_back(aGotResponseMessage);
-                    LOG_MSG("Response put in vector, new size is: " + boost::lexical_cast<std::string>(_responses.size()));
+                    
+                    zmq::message_t aResponseHeader(anHeader.size());
+                    zmq::message_t aResponseEmptySeparator;
+                    memcpy(aResponseHeader.data(), anHeader.data(), anHeader.size());
+                    
+                    // Reply using the right header 
+                    _mainSocket.send(aResponseHeader, ZMQ_SNDMORE);
+                    _mainSocket.send(aResponseEmptySeparator, ZMQ_SNDMORE);
+                    _mainSocket.send(aMessage);
                 }
             }
         }
@@ -125,8 +139,8 @@ struct BackendReceptorThread
     boost::shared_ptr<bool>& _status;
     std::string _frontendId;
     std::string _hostname;
-    std::vector<ReceptorMessages::ResponseMessage>& _responses;
     uint16_t _port;
+    zmq::socket_t& _mainSocket;
 };
 
 FrontendItf::FrontendItf(const std::string& iId) :
@@ -191,7 +205,7 @@ const std::string FrontendItf::getConfXml() const
 
 void FrontendItf::startBackendListener()
 {
-    BackendReceptorThread aCallable(_map, _sonStatus, _responses);
+    BackendReceptorThread aCallable(_map, _sonStatus, _zmqSocket);
     aCallable._hostname = _hostname;
     aCallable._port = _bePort;
     aCallable._frontendId = _frontendId;
@@ -220,35 +234,17 @@ void FrontendItf::start()
         _zmqSocket.recv(&aZMQMessage);
 
         std::string aStringHeader((const char *) anHeader.data(), anHeader.size());
-        LOG_MSG(_frontendId + " received message from: " + aStringHeader);
         std::string aStringMessage((const char*) aZMQMessage.data(), aZMQMessage.size());
 
         ReceptorMessages::BaseMessage aRecvMessage;
         aRecvMessage.ParseFromString(aStringMessage);
         
         const std::string aMsgType(aRecvMessage.messagetype());
-
-        std::size_t anOldSize = _responses.size();
         
         LOG_MSG(_frontendId + " storing message: " + aMsgType);
         MessageQueue& aMsgQ = (*_map)[aMsgType];
         aMsgQ.enqueueMessage(aRecvMessage.options());
-        LOG_MSG(_frontendId + " enqueued message: " + aRecvMessage.messagetype());
-        LOG_MSG(_frontendId + " waiting for response from backend..");
-
-        while (_responses.size() == anOldSize) {/* do nothing */}
-        // Send a Reply to the Receptor
-        std::string aReply(_responses.back().SerializeAsString());
-        _responses.pop_back();
-        zmq::message_t aResponse(aReply.size());
-        memcpy(aResponse.data(), aReply.c_str(), aReply.size());
-        
-        LOG_MSG(_frontendId + " sending reply");
-        LOG_MSG(_frontendId + " _responses size: " + boost::lexical_cast<std::string>(_responses.size()));
-        
-        _zmqSocket.send(anHeader, ZMQ_SNDMORE);
-        _zmqSocket.send(anEmptySeparator, ZMQ_SNDMORE);
-        _zmqSocket.send(aResponse);
+        aMsgQ.enqueueHeader(aStringHeader);
     }
     
     LOG_MSG("Frontend " + _frontendId + " stopping");

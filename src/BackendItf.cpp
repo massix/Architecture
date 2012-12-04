@@ -138,10 +138,8 @@ void BackendItf::start()
                 zmq::message_t aResponse;
                 _socket.recv(&aResponse);
                 
-                std::string aSerializedResponse((const char*) aResponse.data());
                 ReceptorMessages::BackendResponseMessage aResponseMessage;
-                aResponseMessage.ParseFromString(aSerializedResponse);
-
+                aResponseMessage.ParseFromArray(aResponse.data(), (int32_t) aResponse.size());
                 std::string aBackendResponse;
                 
                 if (aResponseMessage.messagetype() == "EMPTY") handleNoMessages();
@@ -152,16 +150,17 @@ void BackendItf::start()
                     if (handleMessage(aResponseMessage, aBackendResponse)) {
                         aBEResponseMessage.set_messagetype(aResponseMessage.messagetype());
                         aBEResponseMessage.set_serializedmessage(aBackendResponse);
+                        aBEResponseMessage.set_serializedresponseheader(
+                            static_cast<const char*>(aResponseMessage.serializedheader().data()),
+                            aResponseMessage.serializedheader().size());
                     }
 
                     LOG_MSG("Sending " + aBEResponseMessage.messagetype() + " back to the FE");
 
                     // Send response back to the frontend
-                    std::string aSerializedResponseForFrontend;
-                    aBEResponseMessage.SerializeToString(&aSerializedResponseForFrontend);
+                    std::string aSerializedResponseForFrontend = aBEResponseMessage.SerializeAsString();
                     zmq::message_t aZmqMessageForFrontend(aSerializedResponseForFrontend.size());
                     memcpy(aZmqMessageForFrontend.data(), aSerializedResponseForFrontend.c_str(), aSerializedResponseForFrontend.size());
-
                     _socket.send(aZmqMessageForFrontend);
                 }
                 
