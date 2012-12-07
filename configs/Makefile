@@ -2,6 +2,8 @@
 
 include ../Makefile.inc
 
+CONFIG_FILES = $(wildcard *.xml)
+
 all:
 	@echo "Nothing to do here.."
 
@@ -10,4 +12,5 @@ clean:
 
 install:
 	@mkdir -p ${INSTALL_DIR}
-	cp *.xml ${INSTALL_DIR}
+	@echo "Copying in ${INSTALL_DIR}"
+	@cp ${CONFIG_FILES} ${INSTALL_DIR}

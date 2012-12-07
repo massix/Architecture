@@ -21,7 +21,7 @@ $(TARGET): $(MESSAGESINJECTOR_OBJ)
 install: $(TARGET)
 	@echo "Installing in ${INSTALL_DIR}"
 	@mkdir -p ${INSTALL_DIR}
-	cp $(TARGET) ${INSTALL_DIR}
+	@cp $(TARGET) ${INSTALL_DIR}
 
 clean:
 	rm -f $(MESSAGESINJECTOR_OBJ) $(TARGET)

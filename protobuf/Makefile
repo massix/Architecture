@@ -25,12 +25,11 @@ all: $(TARGET)
 
 $(TARGET): $(PBOBJ)
 	$(CXX) $(LDFLAGS) $(PBOBJ) -shared -o $(TARGET)
-	@echo "Do not forget to export LD_LIBRARY_PATH=`pwd -P` when running the tests !"
 
 install: $(TARGET)
-	@echo "Installing in ${INSTALL_DIR}"
+	@echo "Generating links in ${INSTALL_DIR}"
 	@mkdir -p ${INSTALL_DIR}
-	cp $(TARGET) ${INSTALL_DIR}
+	@ln -s `pwd`/$(TARGET) ${INSTALL_DIR}/${TARGET}
 
 clean:
 	rm -f $(TARGET)

@@ -18,7 +18,7 @@ $(TARGET): $(TEST_OBJ)
 install:
 	@echo "Installing in ${INSTALL_DIR}"
 	@mkdir -p ${INSTALL_DIR}
-	cp $(TARGET) ${INSTALL_DIR}
+	@cp $(TARGET) ${INSTALL_DIR}
 
 clean:
 	rm -f $(TARGET)
