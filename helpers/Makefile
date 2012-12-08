@@ -2,7 +2,7 @@
 
 include ../Makefile.inc
 
-CXXFLAGS += -I../protobuf
+CXXFLAGS += -I../protobuf -I../include
 
 LDFLAGS = $(PBUF_LDFLAGS) $(ZMQ_LDFLAGS) $(BOOST_LDFLAGS) $(MESSAGES_LDFLAGS)
 

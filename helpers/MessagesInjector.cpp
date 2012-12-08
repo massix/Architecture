@@ -13,9 +13,45 @@
 
 #include <boost/program_options.hpp>
 #include <zmq.hpp>
+#include <Log.h>
 
 using namespace boost::program_options;
 using namespace ReceptorMessages;
+
+typedef enum {
+    kDate = 0,
+    kUsers = 1
+} MessageType_t;
+
+BaseMessage createMessage(
+    const MessageType_t& iMsgType,
+    const std::vector<std::string>& iArgs)
+{
+    BaseMessage aRetValue;
+    std::string aSerializedRequest;
+
+    switch (iMsgType) {
+        case kDate:
+        {
+            aRetValue.set_messagetype("DATE");
+            DateRequest aDateRequest;
+            aDateRequest.set_format(iArgs[0]);
+            aSerializedRequest = aDateRequest.SerializeAsString();
+        }
+            break;
+        case kUsers:
+        {
+            aRetValue.set_messagetype("USERS");
+            UsersRequest anUsersRequest;
+            anUsersRequest.set_user(iArgs[0]);
+            aSerializedRequest = anUsersRequest.SerializeAsString();
+        }
+            break;
+    }
+
+    aRetValue.set_options(aSerializedRequest);
+    return aRetValue;
+}
 
 void exitWithMsg(const std::string& iErrorMsg, const options_description& iOptsDesc)
 {
@@ -34,13 +70,13 @@ int main(int argc, char *argv[])
         ("message-type,m", value<std::string>(), "Sets message type (Mandatory)")
         ("user-id,u", value<uint16_t>(), "Sets user id (Mandatory)")
         ("password,p", value<std::string>(), "Sets sha password (Mandatory)")
-        ("options,o", value<std::string>(), "Sets options");
+        ("options,o", value<std::vector<std::string> >(), "Sets options (Mandatory)");
     
     std::string aRouterAddress;
     std::string aMsgType;
     uint16_t    anUserId;
     std::string aPassword;
-    std::string anOptions;
+    std::vector<std::string> anOptions;
         
     variables_map aVariablesMap;
     store(parse_command_line(argc, argv, anOptionsDesc), aVariablesMap);
@@ -57,10 +93,9 @@ int main(int argc, char *argv[])
     if (!aVariablesMap.count("password")) exitWithMsg("password option is mandatory!", anOptionsDesc);
     else aPassword = aVariablesMap["password"].as<std::string>();
     
-    if (aVariablesMap.count("options")) anOptions = aVariablesMap["options"].as<std::string>();
-    
-    std::cout << " Sending message: " << aMsgType << " to " << aRouterAddress << std::endl;
-    
+    if (!aVariablesMap.count("options")) exitWithMsg("options are mandatory!", anOptionsDesc);
+    else anOptions = aVariablesMap["options"].as<std::vector<std::string> >();
+
     // Send message and gets reply
     zmq::context_t aZMQContext(1);
     zmq::socket_t aZMQSocket(aZMQContext, ZMQ_REQ);
@@ -68,28 +103,32 @@ int main(int argc, char *argv[])
     aZMQSocket.connect(aRouterAddress.c_str());
     
     BaseMessage aBaseMessage;
-    aBaseMessage.set_messagetype(aMsgType);
+    if (aMsgType == "DATE") aBaseMessage = createMessage(kDate, anOptions);
+    else if (aMsgType == "USERS") aBaseMessage = createMessage(kUsers, anOptions);
+    else aBaseMessage.set_messagetype(aMsgType);
+
     aBaseMessage.set_userid(anUserId);
     aBaseMessage.set_shapassword(aPassword);
-    aBaseMessage.set_options(anOptions);
     
     std::string aSerializedMessage;
     aBaseMessage.SerializeToString(&aSerializedMessage);
     
+    LOG_MSG("Sending message\n" + aBaseMessage.DebugString() + "\nto " + aRouterAddress);
+
     zmq::message_t aRequest(aSerializedMessage.size());
     memcpy(aRequest.data(), aSerializedMessage.c_str(), aSerializedMessage.size());
     aZMQSocket.send(aRequest);
     
-    std::cout << "Message sent" << std::endl;
+    LOG_MSG("Message sent");
     
     // Get the reply
     zmq::message_t aReply;
     aZMQSocket.recv(&aReply);
     
-    std::string aResponseReceived((const char*) aReply.data());
+    ResponseMessage aResponseMessage;
+    aResponseMessage.ParseFromArray(aReply.data(), (uint32_t) aReply.size());
 
-    // This part will be completed once the Receptor will send back Protobuf messages
-    std::cout << "Received reply: " << aResponseReceived << std::endl;
+    LOG_MSG("Received reply:\n" + aResponseMessage.DebugString());
     
     return 0;
 }
