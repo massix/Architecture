@@ -14,6 +14,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <protobuf/message.h>
 #include <Log.h>
 
 #define bforeach BOOST_FOREACH
@@ -94,6 +95,27 @@ void BackendItf::configure() {
     
 }
 
+void BackendItf::clientCall(const google::protobuf::Message& iRequest)
+{
+    LOG_MSG("Serializing client request:\n" + iRequest.DebugString());
+    std::string aSerializaedRequest = iRequest.SerializeAsString();
+}
+
+void BackendItf::reply(const google::protobuf::Message &iReply)
+{
+    ReceptorMessages::ResponseMessage aResponseMessage;
+    aResponseMessage.set_messagetype(_handledMessage);
+    aResponseMessage.set_serializedresponseheader(_handledHeader);
+    aResponseMessage.set_serializedmessage(iReply.SerializeAsString());
+    
+    std::string aSerializedMessage(aResponseMessage.SerializeAsString());
+    zmq::message_t aZMQResponse(aSerializedMessage.size());
+    memcpy(aZMQResponse.data(), aSerializedMessage.data(), aSerializedMessage.size());
+ 
+    LOG_MSG("Replying to the client\n" + aResponseMessage.DebugString());
+    _socket.send(aZMQResponse);
+}
+
 void BackendItf::start()
 {
     std::string aFrontendString("tcp://" + _config._frontend + ":" +
@@ -140,29 +162,11 @@ void BackendItf::start()
                 
                 ReceptorMessages::BackendResponseMessage aResponseMessage;
                 aResponseMessage.ParseFromArray(aResponse.data(), (int32_t) aResponse.size());
-                std::string aBackendResponse;
+                _handledMessage = aResponseMessage.messagetype();
+                _handledHeader = aResponseMessage.serializedheader();
                 
                 if (aResponseMessage.messagetype() == "EMPTY") handleNoMessages();
-                else {
-                    ReceptorMessages::ResponseMessage aBEResponseMessage;
-                    aBEResponseMessage.set_messagetype("ERROR");
-
-                    if (handleMessage(aResponseMessage, aBackendResponse)) {
-                        aBEResponseMessage.set_messagetype(aResponseMessage.messagetype());
-                        aBEResponseMessage.set_serializedmessage(aBackendResponse);
-                        aBEResponseMessage.set_serializedresponseheader(
-                            static_cast<const char*>(aResponseMessage.serializedheader().data()),
-                            aResponseMessage.serializedheader().size());
-                    }
-
-                    LOG_MSG("Sending " + aBEResponseMessage.messagetype() + " back to the FE");
-
-                    // Send response back to the frontend
-                    std::string aSerializedResponseForFrontend = aBEResponseMessage.SerializeAsString();
-                    zmq::message_t aZmqMessageForFrontend(aSerializedResponseForFrontend.size());
-                    memcpy(aZmqMessageForFrontend.data(), aSerializedResponseForFrontend.c_str(), aSerializedResponseForFrontend.size());
-                    _socket.send(aZmqMessageForFrontend);
-                }
+                else handleMessage(aResponseMessage);
                 
                 break;
             }

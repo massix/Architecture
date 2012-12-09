@@ -47,7 +47,7 @@ private:
         _status(false),
         _feConnectorThread(0),
         _context(1),
-        _socket(_context, ZMQ_REP) {};
+        _socket(_context, ZMQ_ROUTER) {};
     
     // Not implemented on purpose
     Receptor(const Receptor& iRight);

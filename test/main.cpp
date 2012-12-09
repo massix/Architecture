@@ -126,7 +126,7 @@ void* backendThread(void *ioArgs)
     struct MyBackend : public BackendItf {
         MyBackend(const std::string& iBackendName) : BackendItf(iBackendName) {};
         virtual ~MyBackend() {};
-        virtual bool handleMessage(const ReceptorMessages::BackendResponseMessage& iMessage, std::string& oResponse) {
+        virtual bool handleMessage(const ReceptorMessages::BackendResponseMessage& iMessage) {
             if (iMessage.messagetype() == "DATE") {
                 LOG_MSG("Handling DATE message");
                 ReceptorMessages::DateRequest aDateRequestMsg;
@@ -139,9 +139,8 @@ void* backendThread(void *ioArgs)
                 std::string aResponse(ctime(&aTime));
                 ReceptorMessages::DateResponse aDateResponseMsg;
                 aDateResponseMsg.set_date(aResponse);
-                aDateResponseMsg.SerializeToString(&oResponse);
-
-                LOG_MSG("Sending response: " + aResponse);
+                
+                reply(aDateResponseMsg);
             }
             
             if (iMessage.messagetype() == "USERS") {
@@ -152,9 +151,7 @@ void* backendThread(void *ioArgs)
                 
                 ReceptorMessages::UsersResponse aResponse;
                 aResponse.set_infos("Not logged in");
-                aResponse.SerializeToString(&oResponse);
-                
-                LOG_MSG("Sending response to USERS msg");
+                reply(aResponse);
             }
 
             return true;

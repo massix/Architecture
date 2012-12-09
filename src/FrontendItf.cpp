@@ -241,7 +241,7 @@ void FrontendItf::start()
         
         const std::string aMsgType(aRecvMessage.messagetype());
         
-        LOG_MSG(_frontendId + " storing message: " + aMsgType);
+        LOG_MSG(_frontendId + " storing message:\n " + aRecvMessage.DebugString());
         MessageQueue& aMsgQ = (*_map)[aMsgType];
         aMsgQ.enqueueMessage(aRecvMessage.options());
         aMsgQ.enqueueHeader(aStringHeader);

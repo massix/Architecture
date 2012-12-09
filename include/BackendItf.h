@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <StandardMessage.pb.h>
+#include <protobuf/message.h>
 
 class BackendItf;
 
@@ -42,12 +43,14 @@ public:
     const uint32_t& getPollTimeout() const { return _config._pollTimeoutSeconds; }
     const std::vector<std::string>& getMessagesHandled() const { return _config._messagesHandled; }
 
+    void clientCall(const google::protobuf::Message& iRequest);
+    void reply(const google::protobuf::Message& iReply);
     void configure();
     void start();
     
 protected:    
     /* Deal with messages */
-    virtual bool handleMessage(const ReceptorMessages::BackendResponseMessage& iMessage, std::string& oResponse) = 0;
+    virtual bool handleMessage(const ReceptorMessages::BackendResponseMessage& iMessage) = 0;
     
     /* Deal with poll timeout */
     virtual bool handlePollTimeout() = 0;
@@ -61,6 +64,8 @@ protected:
 
 	zmq::context_t  _context;
 	zmq::socket_t	_socket;
+    std::string _handledMessage;
+    std::string _handledHeader;
     BackendConfiguration _config;
 };
 

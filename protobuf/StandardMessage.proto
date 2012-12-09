@@ -9,6 +9,7 @@ message BaseMessage {
     optional int32    userId = 2;
     optional string   shaPassword = 3;
     optional bytes    options = 4;
+    optional bytes    clientHeader = 5;
 }
 
 // The receptor *always* sends this message
