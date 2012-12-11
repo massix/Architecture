@@ -47,7 +47,8 @@ private:
         _status(false),
         _feConnectorThread(0),
         _context(1),
-        _socket(_context, ZMQ_ROUTER) {};
+        _socket(_context, ZMQ_ROUTER),
+        _configured(false) {};
     
     // Not implemented on purpose
     Receptor(const Receptor& iRight);
@@ -67,4 +68,6 @@ private:
     zmq::socket_t  _socket;
     
     std::map<std::string, zmq::socket_t*> _feSockets;
+    
+    bool _configured;
 };

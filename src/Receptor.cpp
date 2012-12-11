@@ -28,9 +28,19 @@ using boost::thread;
 Receptor& Receptor::GetInstance() {
     static Receptor _Instance;
     
-    // clear the routing map
-    _Instance._routingMap.clear();
-    _Instance.configure("RouterConfig.xml");
+    if (!_Instance._configured) {
+        _Instance._routingMap.clear();
+        _Instance.configure("RouterConfig.xml");
+    }
+    
+    int64_t aVersionMajor = __RECEPTOR_VERSION__ >> 16;
+    int64_t aVersionMinor = (__RECEPTOR_VERSION__ >> 8) & 0x00FF;
+    int64_t aVersionRelease = __RECEPTOR_VERSION__ & 0x0000FF;
+    
+    LOG_MSG("Using receptor library version: " +
+            boost::lexical_cast<std::string>(aVersionMajor) + "." +
+            boost::lexical_cast<std::string>(aVersionMinor) + "." +
+            boost::lexical_cast<std::string>(aVersionRelease));
     
     return _Instance;
 }
@@ -170,4 +180,6 @@ void Receptor::configure(const std::string &iConfFile) {
     catch (...) {
         std::cerr << "Caught exception while configuring" << std::endl;
     }
+    
+    _configured = true;
 }

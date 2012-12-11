@@ -153,6 +153,13 @@ FrontendItf::FrontendItf(const std::string& iId) :
     _map(new BackendMap),
     _sonStatus(new bool(false))
 {
+    int64_t aVersionMajor = (__FRONTEND_VERSION__ >> 16);
+    int64_t aVersionMinor = (__FRONTEND_VERSION__ >> 8) & 0x00FF;
+    int64_t aVersionRelease = __FRONTEND_VERSION__ & 0x0000FF;
+    LOG_MSG("Frontend library version: " +
+            boost::lexical_cast<std::string>(aVersionMajor) + "." +
+            boost::lexical_cast<std::string>(aVersionMinor) + "." +
+            boost::lexical_cast<std::string>(aVersionRelease));
     LOG_MSG("Configuring FE " + _frontendId + " from " + _confXml);
 }
 

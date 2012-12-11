@@ -3,7 +3,13 @@
 SYSTEM = $(shell uname)
 
 CXX = clang++
-CXXFLAGS = -g -Wall -I. -I/usr/local/include -DDEBUG=1
+FRAMEWORK_VERSION=0x0C0B0C
+VERSIONS = \
+					 -D__FRONTEND_VERSION__=${FRAMEWORK_VERSION} \
+					 -D__BACKEND_VERSION__=${FRAMEWORK_VERSION} \
+					 -D__RECEPTOR_VERSION__=${FRAMEWORK_VERSION}
+
+CXXFLAGS = -g -Wall -I. -I/usr/local/include -DDEBUG=1 ${VERSIONS}
 
 ifeq ($(SYSTEM), Darwin)
 LIB_EXT = .dylib
@@ -22,4 +28,5 @@ BOOST_LDFLAGS = -L/usr/local/lib -lboost_system-mt -lboost_program_options-mt -l
 
 INSTALL_DIR = $(shell pwd)/../build
 
-# vi: ft=make
+# vim: set ft=make
+

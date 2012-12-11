@@ -31,7 +31,14 @@ BackendItf::BackendItf(const std::string& iBackend) :
     _context(1),
     _socket(_context, ZMQ_DEALER)
 {
-
+    int64_t aVersionMajor = __BACKEND_VERSION__ >> 16;
+    int64_t aVersionMinor = (__BACKEND_VERSION__ >> 8) & 0x00FF;
+    int64_t aVersionRelease = __BACKEND_VERSION__ & 0x0000FF;
+    
+    LOG_MSG("Using backend library version: " +
+            boost::lexical_cast<std::string>(aVersionMajor) + "." +
+            boost::lexical_cast<std::string>(aVersionMinor) + "." +
+            boost::lexical_cast<std::string>(aVersionRelease));
 }
 
 BackendItf::~BackendItf()
