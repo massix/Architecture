@@ -41,14 +41,7 @@ public:
     void printConfiguration() const;
     
 private:
-    Receptor() :
-        _hostName(""),
-        _port(-1),
-        _status(false),
-        _feConnectorThread(0),
-        _context(1),
-        _socket(_context, ZMQ_ROUTER),
-        _configured(false) {};
+    Receptor();
     
     // Not implemented on purpose
     Receptor(const Receptor& iRight);

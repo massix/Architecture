@@ -25,14 +25,15 @@ using std::map;
 
 using boost::thread;
 
-Receptor& Receptor::GetInstance() {
-    static Receptor _Instance;
-    
-    if (!_Instance._configured) {
-        _Instance._routingMap.clear();
-        _Instance.configure("RouterConfig.xml");
-    }
-    
+Receptor::Receptor() :
+    _hostName(""),
+    _port(-1),
+    _status(false),
+    _feConnectorThread(0),
+    _context(1),
+    _socket(_context, ZMQ_ROUTER),
+    _configured(false)
+{
     int64_t aVersionMajor = __RECEPTOR_VERSION__ >> 16;
     int64_t aVersionMinor = (__RECEPTOR_VERSION__ >> 8) & 0x00FF;
     int64_t aVersionRelease = __RECEPTOR_VERSION__ & 0x0000FF;
@@ -41,7 +42,16 @@ Receptor& Receptor::GetInstance() {
             boost::lexical_cast<std::string>(aVersionMajor) + "." +
             boost::lexical_cast<std::string>(aVersionMinor) + "." +
             boost::lexical_cast<std::string>(aVersionRelease));
+}
+
+Receptor& Receptor::GetInstance() {
+    static Receptor _Instance;
     
+    if (!_Instance._configured) {
+        _Instance._routingMap.clear();
+        _Instance.configure("RouterConfig.xml");
+    }
+
     return _Instance;
 }
 

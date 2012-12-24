@@ -28,5 +28,5 @@ BOOST_LDFLAGS = -L/usr/local/lib -lboost_system-mt -lboost_program_options-mt -l
 
 INSTALL_DIR = $(shell pwd)/../build
 
-# vim: set ft=make
+# vim: filetype=make:ts=2
 
