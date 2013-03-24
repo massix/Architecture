@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Backend name="RegistrationBackend" owner="Massimo Gengarelli" email="massimo.gengarelli@icloud.com">
+    <!-- Connect to the proper FE -->
+    <frontend host="localhost" port="10020" />
+
+    <!-- Every polling lasts 30 seconds -->
+    <!-- During the poll timeout we will do a cleanup of the database -->
+    <poll timeout="30" />
+
+	<!-- Handle messages with this priority -->
+	<message type="REGSTR" />
+    <message type="LOGIN" />
+</Backend>

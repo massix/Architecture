@@ -45,3 +45,23 @@ message UsersRequest {
 message UsersResponse {
     required string infos = 1;
 }
+
+message Registration {
+    required string login = 1;
+    required string password = 2;
+    required string email = 3;
+}
+
+message RegistrationResponse {
+    required bool response = 1;
+    required string error = 2;
+}
+
+message Login {
+    required string login = 1;
+    required string password = 2;
+}
+
+message LoginResponse {
+    required string token = 1;
+}

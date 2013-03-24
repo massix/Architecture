@@ -8,4 +8,6 @@
     <!-- Real "working" frontend -->
     <message type="DATE" routing="tcp://localhost:9020" />
 	<message type="USERS" routing="tcp://localhost:9020" />
+    <message type="REGSTR" routing="tcp://localhost:9020" />
+    <message type="LOGIN" routing="tcp://localhost:9020" />
 </RouterConfig>

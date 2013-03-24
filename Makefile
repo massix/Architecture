@@ -1,6 +1,6 @@
 # Pseudo-recursive Makefile
 
-SUBDIRS = protobuf src helpers configs test
+SUBDIRS = protobuf src helpers configs test backends
 
 all:
 	@for DIR in ${SUBDIRS}; do $(MAKE) all -C $$DIR; done
