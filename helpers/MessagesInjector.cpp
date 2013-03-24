@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     
     std::string aRouterAddress;
     std::string aMsgType;
-    uint16_t    anUserId;
+    uint16_t    anUserId = 0;
     std::string aPassword;
     std::vector<std::string> anOptions;
         
