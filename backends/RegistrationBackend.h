@@ -17,8 +17,7 @@ class RegistrationBackend : public BackendItf
 {
 public:
     explicit RegistrationBackend() :
-        BackendItf("RegistrationBackend"),
-        _usersDb("./usersdb.txt") {};
+        BackendItf("RegistrationBackend") {};
 
     virtual ~RegistrationBackend() {};
 
@@ -34,6 +33,5 @@ protected:
 
 private:
     bool registerUser(std::string const & iLogin, std::string const & iPassword, std::string const & iEmail, std::string & oError);
-    const std::string _usersDb;
 
 };

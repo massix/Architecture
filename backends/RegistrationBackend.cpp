@@ -11,6 +11,12 @@
 #include <zmq.hpp>
 #include <Log.h>
 #include <iostream>
+#include <istream>
+#include <fstream>
+
+#include <sqlite3.h>
+
+using std::ifstream;
 
 bool RegistrationBackend::handleMessage(const ReceptorMessages::BackendResponseMessage &iMessage)
 {
@@ -60,15 +66,24 @@ bool RegistrationBackend::handleNoMessages()
 
 bool RegistrationBackend::registerUser(const std::string &iLogin, const std::string &iPassword, const std::string &iEmail, std::string &oError)
 {
+    sqlite3 *db;
+
     LOG_MSG("Registering user " + iLogin);
     LOG_MSG("Registering password " + iPassword);
     LOG_MSG("Registering email " + iEmail);
 
-    LOG_MSG("Using db: " + _usersDb);
+    std::string aDbFile(getValueForVariable("FILE_PATH"));
 
-    // Erase the error message
-    oError.erase();
+    LOG_MSG("Using DB file " + aDbFile);
 
+    int error = sqlite3_open(aDbFile.c_str(), &db);
+    if (error)
+    {
+        oError = sqlite3_errmsg(db);
+        LOG_MSG("Couldn't open file " + oError);
+    }
+
+    sqlite3_close(db);
     return true;
 }
 

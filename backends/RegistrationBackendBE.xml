@@ -11,4 +11,7 @@
 	<!-- Handle messages with this priority -->
 	<message type="REGSTR" />
     <message type="LOGIN" />
+
+    <!-- Variables -->
+    <variable name="FILE_PATH" value="$HOME/users.db" />
 </Backend>

@@ -3,7 +3,7 @@
 include ../Makefile.inc
 
 CXXFLAGS += -I../include -I../protobuf -I/usr/local/include/google
-LDFLAGS = -L../src -lbackend $(ZMQ_LDFLAGS) $(MESSAGES_LDFLAGS) $(BOOST_LDFLAGS) $(PBUF_LDFLAGS)
+LDFLAGS = -L../src -lbackend $(ZMQ_LDFLAGS) $(MESSAGES_LDFLAGS) $(BOOST_LDFLAGS) $(PBUF_LDFLAGS) -lsqlite3
 
 BACKEND_SRC = RegistrationBackend.cpp
 BACKEND_OBJ = $(BACKEND_SRC:.cpp=.o)
