@@ -24,13 +24,13 @@ public:
 
 protected:
     /* Deal with messages */
-    virtual bool handleMessage(const ReceptorMessages::BackendResponseMessage& iMessage) = 0;
+    virtual bool handleMessage(const ReceptorMessages::BackendResponseMessage& iMessage);
 
     /* Deal with poll timeout */
-    virtual bool handlePollTimeout() = 0;
+    virtual bool handlePollTimeout();
 
     /* Deal with no messages received */
-    virtual bool handleNoMessages() = 0;
+    virtual bool handleNoMessages();
 
 private:
     bool registerUser(std::string const & iLogin, std::string const & iPassword, std::string const & iEmail, std::string & oError);

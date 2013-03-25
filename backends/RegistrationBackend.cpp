@@ -74,5 +74,9 @@ bool RegistrationBackend::registerUser(const std::string &iLogin, const std::str
 
 int main()
 {
+    RegistrationBackend aBackend;
+    aBackend.configure();
+    aBackend.start();
+
     return 0;
 }
