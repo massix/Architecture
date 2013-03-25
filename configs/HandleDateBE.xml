@@ -10,4 +10,8 @@
 	<!-- Handle messages with this priority -->
 	<message type="DATE" />
     <message type="USERS" />
+
+    <!-- Backend variables -->
+    <variable name="TEST_VARIABLE" value="TEST_VALUE" />
+    <variable name="SECOND_VARIABLE" value="SECOND_TEST_VALUE" />
 </Backend>

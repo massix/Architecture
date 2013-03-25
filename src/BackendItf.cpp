@@ -54,7 +54,9 @@ const bool BackendItf::isConfigured() const
 void BackendItf::configure() {
     using boost::property_tree::ptree;
     using namespace boost::property_tree::xml_parser;
-    
+
+    _variables.clear();
+
     std::string anXmlFile(_backend + "BE.xml");
     try {
         LOG_MSG("Starting BE configuration at " + anXmlFile);
@@ -86,6 +88,13 @@ void BackendItf::configure() {
                     else if (aChildIterator->first == "message") {
                         _config._messagesHandled.push_back(aChildIterator->second.get<std::string>("<xmlattr>.type"));
                         LOG_MSG("Inserting message");
+                    }
+
+                    else if (aChildIterator->first == "variable") {
+                        std::string aName(aChildIterator->second.get<std::string>("<xmlattr>.name"));
+                        std::string aValue(aChildIterator->second.get<std::string>("<xmlattr>.value"));
+                        _variables[aName] = aValue;
+                        LOG_MSG("Found variable " + aName + " = " + aValue);aChildIterator->second.get<std::string>("<xmlattr>.value");
                     }
                 }
             }
@@ -180,4 +189,16 @@ void BackendItf::start()
             else handlePollTimeout();
         }
     }
+}
+
+const std::string BackendItf::getValueForVariable(const std::string & iVariable) const
+{
+    std::string aReturnValue;
+    std::map<std::string, std::string>::const_iterator anIterator;
+    anIterator = _variables.find(iVariable);
+
+    if (anIterator != _variables.end())
+        aReturnValue = anIterator->second;
+
+    return aReturnValue;
 }

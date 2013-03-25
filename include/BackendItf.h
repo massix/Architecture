@@ -9,6 +9,7 @@
 #include <zmq.hpp>
 #include <string>
 #include <vector>
+#include <map>
 #include <StandardMessage.pb.h>
 #include <protobuf/message.h>
 
@@ -58,8 +59,12 @@ protected:
     /* Deal with no messages received */
     virtual bool handleNoMessages() = 0;
 
+    /* This is not meant to be overwritten */
+    const std::string getValueForVariable(const std::string & iVariable) const;
+
 protected:
     std::string _backend;
+    std::map<std::string, std::string> _variables;
 	bool _configured;
 
 	zmq::context_t  _context;
