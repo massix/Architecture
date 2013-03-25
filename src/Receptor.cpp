@@ -135,8 +135,8 @@ ReceptorMessages::ResponseMessage Receptor::routeMessage(ReceptorMessages::BaseM
         // Receive the reply
         aSocket->recv(&aResponse);
         ReceptorMessages::ResponseMessage aResponseMessage;
-        aResponseMessage.ParseFromString((const char *) aResponse.data());
-        LOG_MSG("Router response received: " + aResponseMessage.messagetype());
+        aResponseMessage.ParseFromArray((const char *) aResponse.data(), (uint32_t) aResponse.size());
+        LOG_MSG("Router response received:\n" + aResponseMessage.DebugString());
         return aResponseMessage;
     }
     catch (const std::exception& e) {

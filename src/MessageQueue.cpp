@@ -26,13 +26,13 @@ MessageQueue::~MessageQueue()
 
 void MessageQueue::enqueueMessage(const std::string& iMessage)
 {
-    LOG_MSG("Enqueueing message");
+    LOG_MSG("Enqueueing message: " + iMessage);
     _messagesList.push_back(iMessage);
 }
 
 void MessageQueue::enqueueHeader(const std::string &iHeader)
 {
-    LOG_MSG("Enqueueing header");
+    LOG_MSG("Enqueueing header: " + iHeader);
     _headersList.push_back(iHeader);
 }
 

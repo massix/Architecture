@@ -20,7 +20,9 @@ using namespace ReceptorMessages;
 
 typedef enum {
     kDate = 0,
-    kUsers = 1
+    kUsers = 1,
+    kLogin = 2,
+    kRegister = 3
 } MessageType_t;
 
 BaseMessage createMessage(
@@ -47,6 +49,25 @@ BaseMessage createMessage(
             aSerializedRequest = anUsersRequest.SerializeAsString();
         }
             break;
+        case kLogin:
+        {
+            aRetValue.set_messagetype("LOGIN");
+            Login aLoginRequest;
+            aLoginRequest.set_login(iArgs[0]);
+            aLoginRequest.set_password(iArgs[1]);
+            aSerializedRequest = aLoginRequest.SerializeAsString();
+        }
+            break;
+        case kRegister:
+        {
+            aRetValue.set_messagetype("REGSTR");
+            Registration aRegistrationRequest;
+            aRegistrationRequest.set_login(iArgs[0]);
+            aRegistrationRequest.set_password(iArgs[1]);
+            aRegistrationRequest.set_email(iArgs[2]);
+            aSerializedRequest = aRegistrationRequest.SerializeAsString();
+        }
+            break;
     }
 
     aRetValue.set_options(aSerializedRequest);
@@ -68,14 +89,12 @@ int main(int argc, char *argv[])
         ("help,h", "Produces help message")
         ("route,r", value<std::string>(), "Sets Receptor's address (Mandatory!)")
         ("message-type,m", value<std::string>(), "Sets message type (Mandatory)")
-        ("user-id,u", value<uint16_t>(), "Sets user id (Mandatory)")
-        ("password,p", value<std::string>(), "Sets sha password (Mandatory)")
         ("options,o", value<std::vector<std::string> >(), "Sets options (Mandatory)");
     
     std::string aRouterAddress;
     std::string aMsgType;
-    uint16_t    anUserId = 0;
-    std::string aPassword;
+    uint16_t    anUserId = 1;
+    std::string aPassword("blabla");
     std::vector<std::string> anOptions;
         
     variables_map aVariablesMap;
@@ -86,12 +105,6 @@ int main(int argc, char *argv[])
     
     if (!aVariablesMap.count("message-type")) exitWithMsg("message-type option is mandatory!", anOptionsDesc);
     else aMsgType = aVariablesMap["message-type"].as<std::string>();
-    
-    if (!aVariablesMap.count("user-id")) exitWithMsg("user-id option is mandatory!", anOptionsDesc);
-    else anUserId = aVariablesMap["user-id"].as<uint16_t>();
-    
-    if (!aVariablesMap.count("password")) exitWithMsg("password option is mandatory!", anOptionsDesc);
-    else aPassword = aVariablesMap["password"].as<std::string>();
     
     if (!aVariablesMap.count("options")) exitWithMsg("options are mandatory!", anOptionsDesc);
     else anOptions = aVariablesMap["options"].as<std::vector<std::string> >();
@@ -105,6 +118,8 @@ int main(int argc, char *argv[])
     BaseMessage aBaseMessage;
     if (aMsgType == "DATE") aBaseMessage = createMessage(kDate, anOptions);
     else if (aMsgType == "USERS") aBaseMessage = createMessage(kUsers, anOptions);
+    else if (aMsgType == "LOGIN") aBaseMessage = createMessage(kLogin, anOptions);
+    else if (aMsgType == "REGSTR") aBaseMessage = createMessage(kRegister, anOptions);
     else aBaseMessage.set_messagetype(aMsgType);
 
     aBaseMessage.set_userid(anUserId);

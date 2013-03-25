@@ -33,7 +33,7 @@ bool RegistrationBackend::handleMessage(const ReceptorMessages::BackendResponseM
             registerUser(aRegistrationMsg.login(), aRegistrationMsg.password(), aRegistrationMsg.email(), aError));
         aRegistrationResponse.set_error(aError);
 
-        reply(aRegistrationMsg);
+        reply(aRegistrationResponse);
     }
 
     // Handle user login
@@ -61,6 +61,7 @@ bool RegistrationBackend::handlePollTimeout()
 bool RegistrationBackend::handleNoMessages()
 {
     LOG_MSG("Handling no messages..");
+    sleep(getPollTimeout());
     return true;
 }
 
@@ -84,7 +85,7 @@ bool RegistrationBackend::registerUser(const std::string &iLogin, const std::str
     }
 
     sqlite3_close(db);
-    return true;
+    return false;
 }
 
 int main()

@@ -65,6 +65,7 @@ struct BackendReceptorThread
                 if (aBaseMessage.messagetype() == "REQUEST") {
                     LOG_MSG(_frontendId + " backend is asking for new messages");
                     aRequestMessage.ParseFromString(aBaseMessage.options());
+                    LOG_MSG(_frontendId + " received request:\n" + aRequestMessage.DebugString());
                     
                     // Prepare for reply
                     ReceptorMessages::BackendResponseMessage aResponseMessage;
@@ -121,6 +122,7 @@ struct BackendReceptorThread
                         static_cast<const char*>(aGotResponseMessage.serializedresponseheader().data()),
                         aGotResponseMessage.serializedresponseheader().size());
                     LOG_MSG(_frontendId + " received response " + aGotResponseMessage.messagetype() + " from backend");
+                    LOG_MSG("\n" + aGotResponseMessage.DebugString());
                     
                     zmq::message_t aResponseHeader(anHeader.size());
                     zmq::message_t aResponseEmptySeparator;

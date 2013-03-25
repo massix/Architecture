@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <RouterConfig hostname="tcp://*" port="9000">
-    <message type="LOGIN" routing="tcp://localhost:9001" />
     <message type="MOVE" routing="tcp://localhost:9002" />
     <message type="CONTEXT" routing="tcp://localhost:9003" />
     
