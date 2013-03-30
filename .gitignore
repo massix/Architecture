@@ -32,3 +32,5 @@ test/.DS_Store
 .clang_complete
 
 backends/registration_backend
+
+*.un~
