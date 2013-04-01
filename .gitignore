@@ -4,6 +4,7 @@ test/test
 *.o
 *.pb.*
 *.dylib
+*.so
 
 .settings/org.eclipse.cdt.core.prefs
 
